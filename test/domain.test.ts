@@ -113,6 +113,17 @@ describe("pure configuration snapshots", () => {
     expect(resolveConfig(env, text).headers.Example).toBe("synthetic");
     expect(env.PI_OTEL_CONTENT).toBe("false");
   });
+  test("file schemas retain empty strings and tolerate unrelated keys without coercion", () => {
+    expect(resolveConfig({}, '{"endpoint":"","headers":{},"unrelated":42}')).toEqual({
+      endpoint: "",
+      content: false,
+      headers: {},
+      serviceName: "pi",
+    });
+    for (const text of ['{"endpoint":5}', '{"serviceName":false}', '{"content":0}'])
+      expect(() => resolveConfig({}, text)).toThrow("Invalid pi-otel configuration");
+    expect(() => resolveConfig({}, '{"serviceName":""}')).toThrow("Invalid service name");
+  });
   test("invalid files reject even with complete environment overrides", () => {
     const env = {
       PI_OTEL_ENDPOINT: "http://localhost",
