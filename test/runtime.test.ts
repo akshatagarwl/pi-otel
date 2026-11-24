@@ -10,7 +10,7 @@ test("concurrent session runtimes have distinct trace IDs and idempotent shutdow
   try {
     const ids = sessions.map(
       ({ telemetry }) =>
-        telemetry.adapter.propagation.inject(telemetry.span("synthetic", "test").span)?.traceId,
+        telemetry.adapter.identity(telemetry.span("synthetic", "test").span)?.traceId,
     );
     expect(new Set(ids).size).toBe(2);
     expect(sessions[0].telemetry).not.toBe(sessions[1].telemetry);

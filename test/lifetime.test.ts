@@ -16,8 +16,8 @@ test("close settles every held callback before exporter shutdown, including unfi
   const nested = telemetry.span("nested", "synthetic", tool);
   await telemetry.close();
   await Promise.all([parent.done, tool.done, nested.done]);
-  expect(telemetry.adapter.propagation.inject(tool.span)?.traceId).toBe(
-    telemetry.adapter.propagation.inject(parent.span)?.traceId,
+  expect(telemetry.adapter.identity(tool.span)?.traceId).toBe(
+    telemetry.adapter.identity(parent.span)?.traceId,
   );
 });
 
