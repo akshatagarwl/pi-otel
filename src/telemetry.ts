@@ -2,7 +2,8 @@ import { serializeContent, usageMeasurements, type Usage } from "./domain.ts";
 import { Effect } from "effect";
 import { ROOT_CONTEXT, trace } from "@opentelemetry/api";
 import { OTelTelemetryAdapter } from "./adapter.ts";
-import { SpanLifetime, type Outcome } from "./lifetime.ts";
+import { SpanLifetime } from "./lifetime.ts";
+import { ExportResultCode } from "@opentelemetry/core";
 import { TracerProvider, BatchSpanProcessor } from "@opentelemetry/sdk-trace";
 import { LoggerProvider, BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
 import {
@@ -77,7 +78,7 @@ export class Telemetry {
     const original = exporter.export.bind(exporter);
     exporter.export = ((data: unknown, callback: (result: any) => void) => {
       original(data, (result: any) => {
-        if (result.code !== 0) this.failures++;
+        if (result.code !== ExportResultCode.SUCCESS) this.failures++;
         callback(result);
       });
     }) as T["export"];
@@ -145,7 +146,4 @@ export class Telemetry {
       this.failures++;
     }
   }
-}
-export function finish(span: SpanLifetime | undefined, outcome: Outcome) {
-  span?.finish(outcome);
 }

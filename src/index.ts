@@ -9,7 +9,7 @@ import {
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { SpanLifetime as Span } from "./lifetime.ts";
 import { config } from "./config.ts";
-import { Telemetry, finish } from "./telemetry.ts";
+import { Telemetry } from "./telemetry.ts";
 import { startTelemetry } from "./runtime.ts";
 
 export default function extension(pi: ExtensionAPI, start = startTelemetry) {
@@ -29,10 +29,10 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
     return interaction;
   };
   const cleanup = (outcome: "cancelled" | "interrupted" | "error" | "ok") => {
-    for (const span of tools.values()) finish(span, outcome);
+    for (const span of tools.values()) span.finish(outcome);
     tools.clear();
-    finish(model, outcome);
-    finish(interaction, outcome);
+    model?.finish(outcome);
+    interaction?.finish(outcome);
     model = interaction = lastModel = undefined;
     failed = false;
   };
@@ -80,7 +80,7 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
   pi.on("message_start", (event, ctx) => {
     if (ctx.sessionManager.getSessionId() !== session) return;
     if (event.message.role !== "assistant" || !telemetry) return;
-    finish(model, "interrupted");
+    model?.finish("interrupted");
     model = telemetry.span("pi.model", session, ensureInteraction(), requestAttributes(ctx.model));
   });
   pi.on("message_end", (event, ctx) => {
@@ -95,7 +95,7 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
     });
     const outcome = modelOutcome(message.stopReason);
     failed = outcome === "error";
-    finish(model, outcome);
+    model.finish(outcome);
     lastModel = model;
     model = undefined;
   });
@@ -127,7 +127,7 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
     telemetry.content(span, session, "tool.output", event.result);
     const outcome = completionOutcome(ctx.signal?.aborted === true, event.isError);
     span.setAttributes(toolCompletionAttributes(outcome, event.durationMs));
-    finish(span, outcome);
+    span.finish(outcome);
     tools.delete(event.toolCallId);
   });
   pi.on("agent_settled", (event, ctx) => {
