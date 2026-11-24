@@ -1,33 +1,53 @@
 # pi-otel
 
-Standalone Pi 1.6.0 extension using official OpenTelemetry JS SDKs and OTLP HTTP/protobuf. No global providers, context managers, tool overrides, or provider payload interception. Compatible with an OTLP receiver such as [sigiro](https://sigiro.com).
+![Illustrative Pi interaction trace with model and tool spans, correlated content logs, and token and cost metrics exported over OTLP.](assets/overview.svg)
 
-## Install (not automatic)
+Traces, logs and metrics for Pi 1.6.0. Send OTLP HTTP/protobuf to your receiver, including [sigiro](https://sigiro.com).
 
-Disable any other Pi telemetry extension (including desek) first. Do not run both.
+## Install
+
+Disable other Pi telemetry extensions (including desek) first. **Do not run both.**
 
 ```sh
-npm ci
-pi -e ./src/index.ts
-# After verifying that invocation, optionally persist installation:
-pi install /absolute/path/to/pi-otel
+pi install git:github.com/akshatagarwl/pi-otel
 ```
 
-Create `~/.pi/agent/pi-otel.json` (protect it with mode 600):
+Create `~/.pi/agent/pi-otel.json`, protect it with `chmod 600`, then start a new session:
 
 ```json
 {
   "endpoint": "http://127.0.0.1:4318",
-  "content": true,
-  "headers": {}
+  "content": false
 }
 ```
 
+**Content is off by default.** Setting `"content": true` exports full prompts, assistant content (including exposed reasoning), preflight tool arguments and results/details. These may contain secrets or personal data. There is **no content redaction or extension-level truncation**.
+
+Use `/otel-status` to check enablement, privacy and diagnostic failures without exposing endpoint, headers or content.
+
+## What you get
+
+| Signal | Captures |
+| --- | --- |
+| Traces | Interaction → model → tool spans, outcomes and durations |
+| Logs | Opt-in content with actual OTLP trace/span correlation |
+| Metrics | Disjoint token/cache buckets and Pi-reported USD cost |
+
+Illustration above, not a dashboard screenshot. Delivery is bounded and best-effort, not durable.
+
+<details>
+<summary>Configuration & privacy</summary>
+
 The endpoint is a base URL; `/v1/traces`, `/v1/logs`, `/v1/metrics` are appended. No endpoint means disabled. Configuration is read at session start. Environment overrides: `PI_OTEL_ENDPOINT`, `PI_OTEL_CONTENT` (`true` or `false`), `PI_OTEL_HEADERS` (JSON string-to-string object), `PI_OTEL_SERVICE_NAME` (default `pi`, also configurable as `serviceName`). Remote endpoints are allowed only when explicitly configured; use HTTPS and appropriate authentication.
 
-**Content defaults off.** The example explicitly opts into full prompts, assistant content (including reasoning if exposed by Pi), preflight tool arguments, and tool results/details. These can contain secrets and personal data. There is no content redaction or extension-level truncation. JSON bodies have UTF-8 byte counts. Cyclic/non-JSON-serializable values are omitted and counted as diagnostic failures. Pi itself may already have truncated tool output. Provider request histories and system prompts are not captured.
+JSON bodies have UTF-8 byte counts. Cyclic/non-JSON-serializable values are omitted and counted as diagnostic failures. Pi itself may already have truncated tool output. Provider request histories and system prompts are not captured.
 
-## Data contract
+</details>
+
+<details>
+<summary>Technical contract & delivery limits</summary>
+
+Uses official OpenTelemetry JS SDKs. No global providers, context managers, tool overrides, or provider payload interception.
 
 - One interaction root until `agent_settled`, including retries; `agent_end` does not close it. Child model failures remain errors even after recovery. A successful final model response makes the interaction successful; failed tools remain independently marked.
 - Model spans cover Pi assistant message lifecycle, not individual HTTP attempts. Provider/model are taken from Pi. Finish reasons and generic error types are recorded; raw provider error strings are not.
@@ -41,7 +61,19 @@ The endpoint is a base URL; `/v1/traces`, `/v1/logs`, `/v1/metrics` are appended
 
 Shutdown is idempotent and awaits exporters for at most four seconds (transport timeout two seconds). SDK batch queues are bounded; saturation, receiver rejection, shutdown timeout, or abrupt process termination can lose telemetry. This is not durable delivery or zero-overhead instrumentation. Receiver-side payload limits still apply.
 
-## Verification
+</details>
+
+<details>
+<summary>Verification & local development</summary>
+
+For a local checkout:
+
+```sh
+npm ci
+pi -e ./src/index.ts
+# Optionally persist the verified local installation:
+pi install /absolute/path/to/pi-otel
+```
 
 ```sh
 npm run check
@@ -52,3 +84,5 @@ npm audit
 Synthetic fixtures only. Tests load the actual pinned Pi 1.6.0 extension loader, exercise its registered event handlers, decode exported OTLP protobuf correlation/parentage and cumulative metrics, and check retry recovery, parallel/nested tools, unknown calls, cancellation, content privacy, 135 KB content and bounded shutdown. They do not call a live model or prove every provider's event behavior. A separate isolated Pi 1.6.0 print-mode smoke verified a real model/tool interaction: six spans (one interaction, three model, two tool), a failed exit-7 tool marked ERROR, eight correlated content logs and received token/cost metrics. Retry/switch/cancellation remain synthetic-handler checks, not live-provider E2E.
 
 Development uses an isolated physical Pi dev dependency. Never symlink a host package tree into `node_modules` before running npm.
+
+</details>

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="390" viewBox="0 0 960 390" role="img" aria-labelledby="title desc">
+  <title id="title">Pi sessions, made observable</title>
+  <desc id="desc">Illustrative interaction trace with model calls and tool execution, exported alongside correlated logs and token and cost metrics to an OTLP receiver.</desc>
+  <rect width="960" height="390" rx="20" fill="#11151b"/>
+  <g font-family="ui-sans-serif, system-ui, sans-serif">
+    <text x="36" y="45" fill="#99a4b4" font-size="12" letter-spacing="2">PI → OPENTELEMETRY</text>
+    <text x="36" y="83" fill="#f3f6fa" font-size="27" font-weight="650">Every interaction. One connected story.</text>
+    <rect x="36" y="112" width="548" height="240" rx="12" fill="#1a2029" stroke="#303947"/>
+    <text x="56" y="142" fill="#99a4b4" font-size="11" letter-spacing="1.5">ILLUSTRATIVE TRACE</text>
+    <path d="M72 185 V307 M72 223 H92 M72 297 H92 M108 231 V260 H128" fill="none" stroke="#526173" stroke-width="1.5"/>
+    <rect x="56" y="161" width="508" height="33" rx="6" fill="#294c44"/>
+    <text x="70" y="183" fill="#b7f5dc" font-size="14">pi.interaction</text>
+    <text x="424" y="182" fill="#b7f5dc" font-size="11">until agent_settled</text>
+    <rect x="92" y="207" width="288" height="32" rx="6" fill="#393555"/>
+    <text x="106" y="228" fill="#ddd2ff" font-size="14">pi.model</text>
+    <rect x="128" y="247" width="196" height="29" rx="6" fill="#324457"/>
+    <text x="142" y="267" fill="#c1dfff" font-size="13">pi.tool · bash</text>
+    <rect x="92" y="283" width="430" height="32" rx="6" fill="#393555"/>
+    <text x="106" y="304" fill="#ddd2ff" font-size="14">pi.model</text>
+    <text x="56" y="337" fill="#99a4b4" font-size="12">One span per tool. Session identity across the trace.</text>
+    <path d="M588 226 H622" stroke="#7e8c9f" stroke-width="1.5"/>
+    <path d="m616 221 6 5-6 5" fill="none" stroke="#7e8c9f" stroke-width="1.5"/>
+    <rect x="636" y="112" width="288" height="66" rx="10" fill="#1a2029" stroke="#303947"/>
+    <circle cx="658" cy="135" r="4" fill="#b7f5dc"/>
+    <text x="672" y="140" fill="#f3f6fa" font-size="15" font-weight="600">Traces</text>
+    <text x="654" y="160" fill="#99a4b4" font-size="12">Models, tools, outcomes, duration</text>
+    <rect x="636" y="190" width="288" height="66" rx="10" fill="#1a2029" stroke="#303947"/>
+    <circle cx="658" cy="213" r="4" fill="#ddd2ff"/>
+    <text x="672" y="218" fill="#f3f6fa" font-size="15" font-weight="600">Correlated logs</text>
+    <text x="654" y="238" fill="#99a4b4" font-size="12">Opt-in prompts, answers, tool I/O</text>
+    <rect x="636" y="268" width="288" height="66" rx="10" fill="#1a2029" stroke="#303947"/>
+    <circle cx="658" cy="291" r="4" fill="#c1dfff"/>
+    <text x="672" y="296" fill="#f3f6fa" font-size="15" font-weight="600">Metrics</text>
+    <text x="654" y="316" fill="#99a4b4" font-size="12">Tokens, cache usage, reported cost</text>
+    <text x="636" y="354" fill="#99a4b4" font-size="11">OTLP HTTP/protobuf → your receiver</text>
+  </g>
+</svg>
