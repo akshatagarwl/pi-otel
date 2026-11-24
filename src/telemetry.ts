@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import { ROOT_CONTEXT, trace } from "@opentelemetry/api";
 import { OTelTelemetryAdapter } from "./adapter.ts";
 import { SpanLifetime, type Outcome } from "./lifetime.ts";
@@ -136,24 +137,19 @@ export class Telemetry {
     return (this.closing ??= this.shutdown());
   }
   private async shutdown() {
-    let timer: ReturnType<typeof setTimeout>;
     const held = [...this.held];
     for (const span of held) span.finish("interrupted");
     const work = Promise.allSettled(held.map((span) => span.done)).then(() =>
       Promise.allSettled([this.traces.shutdown(), this.logs.shutdown(), this.metrics.shutdown()]),
     );
     try {
-      const result = await Promise.race([
-        work,
-        new Promise<never>((_, reject) => {
-          timer = setTimeout(() => reject(new Error("timeout")), 4000);
-        }),
-      ]);
+      // Timeout interrupts the waiter, not SDK work. allSettled observes late rejections.
+      const result = await Effect.runPromise(
+        Effect.tryPromise(() => work).pipe(Effect.timeout("4 seconds")),
+      );
       this.failures += result.filter((r) => r.status === "rejected").length;
     } catch {
       this.failures++;
-    } finally {
-      clearTimeout(timer!);
     }
   }
 }
