@@ -54,7 +54,7 @@ keeping an ordered log.
 A separate real SDK metric-export test covers all three instrument kinds;
 existing decoded OTLP tests cover cumulative token/cost metrics and content.
 Existing real Pi-loader and ownership/race/privacy/cancellation/shutdown tests
-remain. The runner reports **36 passed, 2 skipped** (38 total). The skipped official
+remain; the test runner is the source of truth for aggregate counts. The skipped official
 `metrics` cases are “records ordered measurements and optional histogram
 exemplars” and “copies instrument metadata and measurement attributes”. No
 measurement-log shadow adapter is used. All committed fixtures are synthetic.
