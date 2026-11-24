@@ -199,10 +199,22 @@ importers:
       '@opentelemetry/sdk-trace':
         specifier: ^3.1.1
         version: 3.1.1(@opentelemetry/api@1.10.0)
+      '@xstate/effect':
+        specifier: 1.0.0-beta.2
+        version: 1.0.0-beta.2(effect@4.1.5)(xstate@6.0.0-beta.3)
+      effect:
+        specifier: 4.1.5
+        version: 4.1.5
+      xstate:
+        specifier: 6.0.0-beta.3
+        version: 6.0.0-beta.3
     devDependencies:
       '@earendil-works/pi-coding-agent':
         specifier: 1.6.0
         version: 1.6.0(@aws-sdk/credential-provider-node@3.972.98)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(ws@8.23.0)
+      '@effect/vitest':
+        specifier: 4.1.5
+        version: 4.1.5(effect@4.1.5)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.0)))
       '@types/node':
         specifier: ^26.6.6
         version: 26.6.6
@@ -356,6 +368,12 @@ packages:
   '@earendil-works/pi-tui@1.6.0':
     resolution: {integrity: sha512-nVtWZ4rYr3KHDla3skGAWG5XoITEUJCoEx1AsWv1yKxV7+v86ulD2hxVn/P+COI6jsoeQmj3orqHbCHZwAUsUg==}
     engines: {node: '>=22.19.0'}
+
+  '@effect/vitest@4.1.5':
+    resolution: {integrity: sha512-18u1013wkJtSelk1ZYLc/5aUnluTQyDfi2hAemkJW1GQ9qXw4mtPSiSf0AXZPhesmGCvG1Dk2C4JYD2sz+R72w==}
+    peerDependencies:
+      effect: ^4.1.5
+      vitest: '>=5.0.0 <6.0.0'
 
   '@emnapi/core@2.0.0-beta.2':
     resolution: {integrity: sha512-MzCVoWtcg4Pm2B3je5mMvYMvj3MmBKw+fU7vbsJc9/iT8ip6/eYIHo/Dsm/mr+wsHB6SEyJDuxB09Yy6r/8+4A==}
@@ -1189,6 +1207,16 @@ packages:
   '@vitest/spy@5.1.1':
     resolution: {integrity: sha512-6K8C6alQG1/Yc8/ZI22iJS7JEsxPdVzqtqDq+/xM4Z0mGVykemMVjLhqMy/q6/IHYG3kKD8hKSwRen/ZdyI9vQ==}
 
+  '@xstate/effect@1.0.0-beta.2':
+    resolution: {integrity: sha512-BGyeP2E2vRxRtMiUKrG797qGMQfE8WqZNYiC5VLFrwIEj73C25LnyQpk5VwhYL2vUntIH629klM/sDWZ1ZjPyQ==}
+    peerDependencies:
+      '@oxlint/plugins': ^1.76.0
+      effect: ^4.0.0
+      xstate: ^6.0.0-beta.3
+    peerDependenciesMeta:
+      '@oxlint/plugins':
+        optional: true
+
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
@@ -1256,6 +1284,9 @@ packages:
 
   ecdsa-sig-formatter@1.0.11:
     resolution: {integrity: sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ==}
+
+  effect@4.1.5:
+    resolution: {integrity: sha512-xyR20KhQI0vg2gD8ILUSQRTTESEYJ0JKdP+QD8J37xbwPTqXRxFM/l0+vUVD9fuSvoYruoTqyt33C4FZv1s4TQ==}
 
   es-module-lexer@2.3.2:
     resolution: {integrity: sha512-poHGpORABojJJucnV9KbOavETW8lBVnphkW77ER5/BQ5Fz7oXSoCNek7IH3vR5nRjdsEz926ibFYX8KtLQmdyw==}
@@ -1839,6 +1870,10 @@ packages:
       utf-8-validate:
         optional: true
 
+  xstate@6.0.0-beta.3:
+    resolution: {integrity: sha512-b6C6SQ9cern6sD531uHcwOH94lBL+701Jd/VRSkzT8oAV1AKTT9oXFZtvC5DajUU4+8gmTLBTMHjZjd0VrsmAg==}
+    hasBin: true
+
   yaml@2.9.0:
     resolution: {integrity: sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==}
     engines: {node: '>= 14.6'}
@@ -2133,6 +2168,11 @@ snapshots:
       get-east-asian-width: 1.6.0
       marked: 18.0.11
       marked-cjk-friendly: 0.1.2(marked@18.0.11)
+
+  '@effect/vitest@4.1.5(effect@4.1.5)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.0)))':
+    dependencies:
+      effect: 4.1.5
+      vitest: 5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.0))
 
   '@emnapi/core@2.0.0-beta.2':
     dependencies:
@@ -2660,6 +2700,11 @@ snapshots:
 
   '@vitest/spy@5.1.1': {}
 
+  '@xstate/effect@1.0.0-beta.2(effect@4.1.5)(xstate@6.0.0-beta.3)':
+    dependencies:
+      effect: 4.1.5
+      xstate: 6.0.0-beta.3
+
   agent-base@7.1.4: {}
 
   agent-base@9.0.0: {}
@@ -2703,6 +2748,8 @@ snapshots:
   ecdsa-sig-formatter@1.0.11:
     dependencies:
       safe-buffer: 5.2.1
+
+  effect@4.1.5: {}
 
   es-module-lexer@2.3.2: {}
 
@@ -3222,5 +3269,7 @@ snapshots:
   why-is-node-running@3.2.1: {}
 
   ws@8.23.0: {}
+
+  xstate@6.0.0-beta.3: {}
 
   yaml@2.9.0: {}

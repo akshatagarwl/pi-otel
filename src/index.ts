@@ -2,9 +2,13 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { Span } from "@opentelemetry/api";
 import { config } from "./config.ts";
 import { Telemetry, finish } from "./telemetry.ts";
+import { startTelemetry } from "./runtime.ts";
 
-export default function extension(pi: ExtensionAPI) {
+export default function extension(pi: ExtensionAPI, start = startTelemetry) {
   let telemetry: Telemetry | undefined;
+  let runtime: Awaited<ReturnType<typeof startTelemetry>> | undefined;
+  let generation = 0;
+  const starting = new Set<Promise<void>>();
   let session = "";
   let interaction: Span | undefined;
   let model: Span | undefined;
@@ -24,24 +28,49 @@ export default function extension(pi: ExtensionAPI) {
     model = interaction = lastModel = undefined;
     failed = false;
   };
-  pi.on("session_start", (_event, ctx) => {
+  pi.on("session_start", async (_event, ctx) => {
+    const ownGeneration = ++generation;
+    session = ctx.sessionManager.getSessionId();
+    cleanup("interrupted");
+    const previous = runtime;
+    runtime = undefined;
+    telemetry = undefined;
     try {
+      await previous?.close();
+      if (generation !== ownGeneration) return;
       const cfg = config();
-      session = ctx.sessionManager.getSessionId();
-      if (cfg.endpoint) telemetry = new Telemetry(cfg);
+      if (cfg.endpoint) {
+        const pending = start(cfg).then(async (created) => {
+          if (generation !== ownGeneration) {
+            await created.close();
+            return;
+          }
+          runtime = created;
+          telemetry = created.telemetry;
+        });
+        starting.add(pending);
+        try {
+          await pending;
+        } finally {
+          starting.delete(pending);
+        }
+      }
+      if (generation !== ownGeneration) return;
       diagnostic = cfg.endpoint
         ? `enabled; content=${cfg.content}; OTLP HTTP/protobuf`
         : diagnostic;
     } catch {
-      diagnostic = "disabled: configuration invalid";
+      if (generation === ownGeneration) diagnostic = "disabled: configuration invalid";
     }
   });
-  pi.on("before_agent_start", (event) => {
+  pi.on("before_agent_start", (event, ctx) => {
+    if (ctx.sessionManager.getSessionId() !== session) return;
     const span = ensureInteraction();
     if (span && event.messageType === "user")
       telemetry?.content(span, session, "prompt", event.prompt);
   });
   pi.on("message_start", (event, ctx) => {
+    if (ctx.sessionManager.getSessionId() !== session) return;
     if (event.message.role !== "assistant" || !telemetry) return;
     finish(model, "interrupted");
     model = telemetry.span("pi.model", session, ensureInteraction(), {
@@ -49,7 +78,8 @@ export default function extension(pi: ExtensionAPI) {
       "gen_ai.request.model": ctx.model?.id ?? "unknown",
     });
   });
-  pi.on("message_end", (event) => {
+  pi.on("message_end", (event, ctx) => {
+    if (ctx.sessionManager.getSessionId() !== session) return;
     const message = event.message;
     if (message.role !== "assistant" || !model) return;
     model.setAttributes({
@@ -74,7 +104,8 @@ export default function extension(pi: ExtensionAPI) {
     lastModel = model;
     model = undefined;
   });
-  pi.on("tool_execution_start", (event) => {
+  pi.on("tool_execution_start", (event, ctx) => {
+    if (ctx.sessionManager.getSessionId() !== session) return;
     if (!telemetry || tools.has(event.toolCallId)) return;
     const parent = event.parentToolCallId ? tools.get(event.parentToolCallId) : lastModel;
     const span = telemetry.span("pi.tool", session, parent ?? ensureInteraction(), {
@@ -84,6 +115,7 @@ export default function extension(pi: ExtensionAPI) {
     telemetry.content(span, session, "tool.preflight.input", event.args);
   });
   pi.on("tool_execution_end", (event, ctx) => {
+    if (ctx.sessionManager.getSessionId() !== session) return;
     if (!telemetry) return;
     const parent = event.parentToolCallId ? tools.get(event.parentToolCallId) : lastModel;
     const span =
@@ -100,11 +132,21 @@ export default function extension(pi: ExtensionAPI) {
     finish(span, outcome);
     tools.delete(event.toolCallId);
   });
-  pi.on("agent_settled", (event) => cleanup(event.aborted ? "cancelled" : failed ? "error" : "ok"));
-  pi.on("session_shutdown", async () => {
+  pi.on("agent_settled", (event, ctx) => {
+    if (ctx.sessionManager.getSessionId() !== session) return;
+    cleanup(event.aborted ? "cancelled" : failed ? "error" : "ok");
+  });
+  pi.on("session_shutdown", async (_event, ctx) => {
+    if (ctx.sessionManager.getSessionId() !== session) return;
+    ++generation;
     cleanup("interrupted");
-    await telemetry?.close();
+    const previous = runtime;
+    runtime = undefined;
     telemetry = undefined;
+    await Promise.all([
+      previous?.close(),
+      ...Array.from(starting, (pending) => pending.catch(() => {})),
+    ]);
   });
   pi.registerCommand("otel-status", {
     description: "Show privacy and exporter status without endpoints or credentials",

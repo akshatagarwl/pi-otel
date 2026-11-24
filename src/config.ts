@@ -1,6 +1,16 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { Schema } from "effect";
+
+const FileConfig = Schema.Struct({
+  endpoint: Schema.optionalKey(Schema.String),
+  serviceName: Schema.optionalKey(Schema.String),
+  content: Schema.optionalKey(Schema.Boolean),
+  headers: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
+});
+const decodeFileConfig = Schema.decodeUnknownSync(FileConfig);
+const decodeHeaders = Schema.decodeUnknownSync(Schema.Record(Schema.String, Schema.String));
 
 export interface Config {
   endpoint?: string;
@@ -14,7 +24,7 @@ export function config(
 ): Config {
   let file: Partial<Config> = {};
   try {
-    file = JSON.parse(readFileSync(path, "utf8"));
+    file = decodeFileConfig(JSON.parse(readFileSync(path, "utf8")));
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code !== "ENOENT")
       throw new Error("Invalid pi-otel configuration");
@@ -35,14 +45,9 @@ export function config(
     env.PI_OTEL_CONTENT === undefined ? file.content === true : env.PI_OTEL_CONTENT === "true";
   if (env.PI_OTEL_CONTENT !== undefined && !["true", "false"].includes(env.PI_OTEL_CONTENT))
     throw new Error("PI_OTEL_CONTENT must be true or false");
-  const headers = env.PI_OTEL_HEADERS ? JSON.parse(env.PI_OTEL_HEADERS) : (file.headers ?? {});
-  if (
-    !headers ||
-    typeof headers !== "object" ||
-    Array.isArray(headers) ||
-    Object.values(headers).some((v) => typeof v !== "string")
-  )
-    throw new Error("Invalid pi-otel headers");
+  const headers = decodeHeaders(
+    env.PI_OTEL_HEADERS ? JSON.parse(env.PI_OTEL_HEADERS) : (file.headers ?? {}),
+  );
   const serviceName = env.PI_OTEL_SERVICE_NAME ?? file.serviceName ?? "pi";
   if (typeof serviceName !== "string" || !serviceName.trim())
     throw new Error("Invalid service name");
