@@ -1,5 +1,9 @@
+import { W3CTraceContextPropagator } from "@opentelemetry/core";
 import {
   ROOT_CONTEXT,
+  defaultTextMapGetter,
+  defaultTextMapSetter,
+  isSpanContextValid,
   trace,
   SpanStatusCode,
   type Attributes,
@@ -35,26 +39,19 @@ export class OTelTelemetryAdapter implements TelemetryContext {
     private tracer: Tracer,
     meter?: Meter,
   ) {
+    const propagator = new W3CTraceContextPropagator();
     this.propagation = {
       inject: (context) => {
         const sc = this.identities.get(context);
-        return sc
-          ? { traceId: sc.traceId, spanId: sc.spanId, traceFlags: String(sc.traceFlags) }
-          : undefined;
+        if (!sc || !isSpanContextValid(sc)) return undefined;
+        const carrier: Record<string, string> = {};
+        propagator.inject(trace.setSpanContext(ROOT_CONTEXT, sc), carrier, defaultTextMapSetter);
+        return carrier;
       },
       extract: (carrier) => {
-        if (
-          typeof carrier?.traceId !== "string" ||
-          typeof carrier.spanId !== "string" ||
-          typeof carrier.traceFlags !== "string"
-        )
-          return this;
-        return this.parent({
-          traceId: carrier.traceId,
-          spanId: carrier.spanId,
-          traceFlags: Number(carrier.traceFlags),
-          isRemote: true,
-        });
+        const extracted = propagator.extract(ROOT_CONTEXT, carrier, defaultTextMapGetter);
+        const sc = trace.getSpanContext(extracted);
+        return sc && isSpanContextValid(sc) ? this.parent(sc) : this;
       },
     };
     if (meter)

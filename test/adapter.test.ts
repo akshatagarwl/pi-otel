@@ -18,9 +18,7 @@ const cases = createTelemetryAdapterConformance(async () => {
     meters.getMeter("conformance"),
   );
   const carrier = (sc: { traceId: string; spanId: string; traceFlags: number }) => ({
-    traceId: sc.traceId,
-    spanId: sc.spanId,
-    traceFlags: String(sc.traceFlags),
+    traceparent: `00-${sc.traceId}-${sc.spanId}-${sc.traceFlags.toString(16).padStart(2, "0")}`,
   });
   return {
     context: adapter,
