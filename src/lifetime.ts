@@ -9,9 +9,8 @@ export class SpanLifetime {
   private finished = false;
   constructor(context: TelemetryContext, name: string, attributes: SpanAttributes) {
     let admitted!: TelemetrySpan;
-    const gate = new Promise<void>((resolve) => {
-      this.release = resolve;
-    });
+    const { promise: gate, resolve } = Promise.withResolvers<void>();
+    this.release = resolve;
     this.done = context.startSpan({ name, attributes }, (span) => {
       admitted = span;
       return gate;
