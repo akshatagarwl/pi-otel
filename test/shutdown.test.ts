@@ -13,7 +13,8 @@ test("unresponsive exporter has bounded, idempotent shutdown and safe failure co
   });
   const span = telemetry.span("synthetic", "session");
   telemetry.content(span, "session", "prompt", "synthetic");
-  span.end();
+  span.finish("ok");
+  await span.done;
   const start = performance.now();
   const first = telemetry.close();
   assert.equal(first, telemetry.close());

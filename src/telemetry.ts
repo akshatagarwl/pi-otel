@@ -1,4 +1,6 @@
-import { ROOT_CONTEXT, trace, SpanStatusCode, type Span } from "@opentelemetry/api";
+import { ROOT_CONTEXT, trace } from "@opentelemetry/api";
+import { OTelTelemetryAdapter } from "./adapter.ts";
+import { SpanLifetime, type Outcome } from "./lifetime.ts";
 import { TracerProvider, BatchSpanProcessor } from "@opentelemetry/sdk-trace";
 import { LoggerProvider, BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
 import {
@@ -18,6 +20,8 @@ export class Telemetry {
   logs: LoggerProvider;
   metrics: MeterProvider;
   failures = 0;
+  readonly adapter: OTelTelemetryAdapter;
+  private held = new Set<SpanLifetime>();
   private tokenCounter;
   private costCounter;
   private closing?: Promise<void>;
@@ -63,8 +67,9 @@ export class Telemetry {
       ],
     });
     const meter = this.metrics.getMeter("pi-otel");
-    this.tokenCounter = meter.createCounter("pi.tokens", { unit: "{token}" });
-    this.costCounter = meter.createCounter("pi.cost", { unit: "USD" });
+    this.adapter = new OTelTelemetryAdapter(this.traces.getTracer("pi-otel"), meter);
+    this.tokenCounter = this.adapter.metrics!.counter("pi.tokens", { unit: "{token}" });
+    this.costCounter = this.adapter.metrics!.counter("pi.cost", { unit: "USD" });
   }
   private monitor<T extends { export: (...args: any[]) => void }>(exporter: T): T {
     const original = exporter.export.bind(exporter);
@@ -76,16 +81,23 @@ export class Telemetry {
     }) as T["export"];
     return exporter;
   }
-  span(name: string, session: string, parent?: Span, attrs = {}) {
-    return this.traces
-      .getTracer("pi-otel")
-      .startSpan(
-        name,
-        { attributes: { "gen_ai.conversation.id": session, ...attrs } },
-        parent ? trace.setSpan(ROOT_CONTEXT, parent) : ROOT_CONTEXT,
-      );
+  span(name: string, session: string, parent?: SpanLifetime, attrs = {}) {
+    const context = parent
+      ? this.adapter.propagation.extract(this.adapter.propagation.inject(parent.span))
+      : this.adapter;
+    const held = new SpanLifetime(context, name, { "gen_ai.conversation.id": session, ...attrs });
+    this.held.add(held);
+    void held.done.then(
+      () => this.held.delete(held),
+      () => {
+        this.held.delete(held);
+        this.failures++;
+      },
+    );
+    if (this.closing) held.finish("interrupted");
+    return held;
   }
-  content(span: Span, session: string, kind: string, value: unknown) {
+  content(span: SpanLifetime, session: string, kind: string, value: unknown) {
     if (!this.cfg.content) return;
     let body: string;
     try {
@@ -94,7 +106,8 @@ export class Telemetry {
       this.failures++;
       return;
     }
-    const sc = span.spanContext();
+    const sc = this.adapter.identity(span.span);
+    if (!sc) return;
     this.logs.getLogger("pi-otel").emit({
       context: trace.setSpanContext(ROOT_CONTEXT, sc),
       body,
@@ -124,11 +137,11 @@ export class Telemetry {
   }
   private async shutdown() {
     let timer: ReturnType<typeof setTimeout>;
-    const work = Promise.allSettled([
-      this.traces.shutdown(),
-      this.logs.shutdown(),
-      this.metrics.shutdown(),
-    ]);
+    const held = [...this.held];
+    for (const span of held) span.finish("interrupted");
+    const work = Promise.allSettled(held.map((span) => span.done)).then(() =>
+      Promise.allSettled([this.traces.shutdown(), this.logs.shutdown(), this.metrics.shutdown()]),
+    );
     try {
       const result = await Promise.race([
         work,
@@ -144,12 +157,6 @@ export class Telemetry {
     }
   }
 }
-export function finish(
-  span: Span | undefined,
-  outcome: "ok" | "error" | "cancelled" | "interrupted",
-) {
-  if (!span) return;
-  span.setAttribute("pi.outcome", outcome);
-  if (outcome === "error") span.setStatus({ code: SpanStatusCode.ERROR });
-  span.end();
+export function finish(span: SpanLifetime | undefined, outcome: Outcome) {
+  span?.finish(outcome);
 }

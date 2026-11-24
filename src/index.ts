@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { Span } from "@opentelemetry/api";
+import type { SpanLifetime as Span } from "./lifetime.ts";
 import { config } from "./config.ts";
 import { Telemetry, finish } from "./telemetry.ts";
 import { startTelemetry } from "./runtime.ts";

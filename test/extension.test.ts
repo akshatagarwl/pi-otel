@@ -31,8 +31,9 @@ test("official exporters emit correlated full content, hierarchy and cumulative 
     },
     { "gen_ai.provider.name": "synthetic" },
   );
-  child.end();
-  parent.end();
+  child.finish("ok");
+  parent.finish("ok");
+  await Promise.all([child.done, parent.done]);
   await telemetry.metrics.forceFlush();
   await telemetry.metrics.forceFlush();
   await telemetry.close();
