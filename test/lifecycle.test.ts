@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { resolve } from "node:path";
@@ -112,12 +112,9 @@ test("Pi loader lifecycle: retries, parallel/nested/failing tools, cancellation 
     await emit("agent_settled", { aborted: true });
     await emit("session_shutdown");
     const spans = payloads["/v1/traces"].flatMap((b) =>
-      decode("Traces", b).resources.flatMap((r: any) =>
-        r.scopes.flatMap((s: any) => s.spans),
-      ),
+      decode("Traces", b).resources.flatMap((r: any) => r.scopes.flatMap((s: any) => s.spans)),
     );
-    const attr = (s: any, k: string) =>
-      s.attributes?.find((a: any) => a.key === k)?.value;
+    const attr = (s: any, k: string) => s.attributes?.find((a: any) => a.key === k)?.value;
     const interactions = spans.filter((s: any) => s.name === "pi.interaction");
     assert.equal(interactions.length, 2);
     assert.equal(attr(interactions[0], "pi.outcome").stringValue, "ok");
@@ -128,16 +125,10 @@ test("Pi loader lifecycle: retries, parallel/nested/failing tools, cancellation 
     const errors = spans.filter((s: any) => s.status?.code === 2);
     assert.equal(errors.length, 3);
     const logs = payloads["/v1/logs"].flatMap((b) =>
-      decode("Logs", b).resources.flatMap((r: any) =>
-        r.scopes.flatMap((s: any) => s.logs),
-      ),
+      decode("Logs", b).resources.flatMap((r: any) => r.scopes.flatMap((s: any) => s.logs)),
     );
     for (const log of logs)
-      assert.ok(
-        spans.some(
-          (s: any) => s.spanId === log.spanId && s.traceId === log.traceId,
-        ),
-      );
+      assert.ok(spans.some((s: any) => s.spanId === log.spanId && s.traceId === log.traceId));
     process.env.PI_OTEL_CONTENT = "false";
     const before = payloads["/v1/logs"].length;
     await emit("session_start");

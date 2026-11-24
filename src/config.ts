@@ -32,17 +32,10 @@ export function config(
       throw new Error("Invalid pi-otel endpoint");
   }
   const content =
-    env.PI_OTEL_CONTENT === undefined
-      ? file.content === true
-      : env.PI_OTEL_CONTENT === "true";
-  if (
-    env.PI_OTEL_CONTENT !== undefined &&
-    !["true", "false"].includes(env.PI_OTEL_CONTENT)
-  )
+    env.PI_OTEL_CONTENT === undefined ? file.content === true : env.PI_OTEL_CONTENT === "true";
+  if (env.PI_OTEL_CONTENT !== undefined && !["true", "false"].includes(env.PI_OTEL_CONTENT))
     throw new Error("PI_OTEL_CONTENT must be true or false");
-  const headers = env.PI_OTEL_HEADERS
-    ? JSON.parse(env.PI_OTEL_HEADERS)
-    : (file.headers ?? {});
+  const headers = env.PI_OTEL_HEADERS ? JSON.parse(env.PI_OTEL_HEADERS) : (file.headers ?? {});
   if (
     !headers ||
     typeof headers !== "object" ||

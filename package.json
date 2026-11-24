@@ -4,9 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "tsx --test test/*.test.ts",
-    "check": "tsc --noEmit",
-    "format": "prettier --write src test"
+    "test": "vitest run",
+    "check": "tsc --noEmit && oxlint src test && oxfmt --check src test",
+    "format": "oxfmt src test",
+    "build": "tsc --noEmit"
   },
   "repository": {
     "type": "git",
@@ -33,10 +34,13 @@
   "devDependencies": {
     "@earendil-works/pi-coding-agent": "1.6.0",
     "@types/node": "^26.6.6",
-    "prettier": "^3.10.1",
+    "lefthook": "2.1.4",
+    "oxfmt": "0.80.0",
+    "oxlint": "1.95.0",
     "protobufjs": "^8.8.1",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "5.1.1"
   },
   "private": true,
   "peerDependencies": {
@@ -46,5 +50,6 @@
     "extensions": [
       "./src/index.ts"
     ]
-  }
+  },
+  "packageManager": "pnpm@12.21.0"
 }

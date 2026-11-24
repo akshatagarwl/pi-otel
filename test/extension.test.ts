@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { Telemetry } from "../src/telemetry.ts";
@@ -36,23 +36,17 @@ test("official exporters emit correlated full content, hierarchy and cumulative 
   await telemetry.metrics.forceFlush();
   await telemetry.metrics.forceFlush();
   await telemetry.close();
-  const spans = decode("Traces", payloads["/v1/traces"][0]).resources[0]
-    .scopes[0].spans;
-  const log = decode("Logs", payloads["/v1/logs"][0]).resources[0].scopes[0]
-    .logs[0];
+  const spans = decode("Traces", payloads["/v1/traces"][0]).resources[0].scopes[0].spans;
+  const log = decode("Logs", payloads["/v1/logs"][0]).resources[0].scopes[0].logs[0];
   assert.equal(spans[0].parentSpanId, spans[1].spanId);
   assert.equal(log.traceId, spans[0].traceId);
   assert.equal(log.spanId, spans[0].spanId);
   assert.equal(log.body.stringValue.length, 135000);
-  const first = decode("Metrics", payloads["/v1/metrics"][0]).resources[0]
-    .scopes[0].metrics;
-  const second = decode("Metrics", payloads["/v1/metrics"][1]).resources[0]
-    .scopes[0].metrics;
+  const first = decode("Metrics", payloads["/v1/metrics"][0]).resources[0].scopes[0].metrics;
+  const second = decode("Metrics", payloads["/v1/metrics"][1]).resources[0].scopes[0].metrics;
   assert.deepEqual(first, second);
   assert.equal(first[0].sum.aggregationTemporality, 2);
-  assert.ok(
-    payloads["/v1/logs"]?.[0].includes(Buffer.from("x".repeat(135000))),
-  );
+  assert.ok(payloads["/v1/logs"]?.[0].includes(Buffer.from("x".repeat(135000))));
   assert.ok(payloads["/v1/metrics"]?.length >= 2);
   assert.ok(!payloads["/v1/metrics"][0].includes(Buffer.from("conversation")));
   await new Promise<void>((resolve) => server.close(() => resolve()));

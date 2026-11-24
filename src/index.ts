@@ -76,34 +76,23 @@ export default function extension(pi: ExtensionAPI) {
   });
   pi.on("tool_execution_start", (event) => {
     if (!telemetry || tools.has(event.toolCallId)) return;
-    const parent = event.parentToolCallId
-      ? tools.get(event.parentToolCallId)
-      : lastModel;
-    const span = telemetry.span(
-      "pi.tool",
-      session,
-      parent ?? ensureInteraction(),
-      { "gen_ai.tool.name": event.toolName },
-    );
+    const parent = event.parentToolCallId ? tools.get(event.parentToolCallId) : lastModel;
+    const span = telemetry.span("pi.tool", session, parent ?? ensureInteraction(), {
+      "gen_ai.tool.name": event.toolName,
+    });
     tools.set(event.toolCallId, span);
     telemetry.content(span, session, "tool.preflight.input", event.args);
   });
   pi.on("tool_execution_end", (event, ctx) => {
     if (!telemetry) return;
-    const parent = event.parentToolCallId
-      ? tools.get(event.parentToolCallId)
-      : lastModel;
+    const parent = event.parentToolCallId ? tools.get(event.parentToolCallId) : lastModel;
     const span =
       tools.get(event.toolCallId) ??
       telemetry.span("pi.tool", session, parent ?? ensureInteraction(), {
         "gen_ai.tool.name": event.toolName,
       });
     telemetry.content(span, session, "tool.output", event.result);
-    const outcome = ctx.signal?.aborted
-      ? "cancelled"
-      : event.isError
-        ? "error"
-        : "ok";
+    const outcome = ctx.signal?.aborted ? "cancelled" : event.isError ? "error" : "ok";
     if (outcome === "error") span.setAttribute("error.type", "tool_error");
     if (event.durationMs !== undefined)
       span.setAttribute("pi.tool.execution.duration_ms", event.durationMs);
@@ -111,17 +100,14 @@ export default function extension(pi: ExtensionAPI) {
     finish(span, outcome);
     tools.delete(event.toolCallId);
   });
-  pi.on("agent_settled", (event) =>
-    cleanup(event.aborted ? "cancelled" : failed ? "error" : "ok"),
-  );
+  pi.on("agent_settled", (event) => cleanup(event.aborted ? "cancelled" : failed ? "error" : "ok"));
   pi.on("session_shutdown", async () => {
     cleanup("interrupted");
     await telemetry?.close();
     telemetry = undefined;
   });
   pi.registerCommand("otel-status", {
-    description:
-      "Show privacy and exporter status without endpoints or credentials",
+    description: "Show privacy and exporter status without endpoints or credentials",
     handler: async (_args, ctx) =>
       ctx.ui.notify(
         `${diagnostic}; pending tools=${tools.size}; shutdown failures=${telemetry?.failures ?? 0}`,

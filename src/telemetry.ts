@@ -1,14 +1,6 @@
-import {
-  ROOT_CONTEXT,
-  trace,
-  SpanStatusCode,
-  type Span,
-} from "@opentelemetry/api";
+import { ROOT_CONTEXT, trace, SpanStatusCode, type Span } from "@opentelemetry/api";
 import { TracerProvider, BatchSpanProcessor } from "@opentelemetry/sdk-trace";
-import {
-  LoggerProvider,
-  BatchLogRecordProcessor,
-} from "@opentelemetry/sdk-logs";
+import { LoggerProvider, BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
 import {
   MeterProvider,
   PeriodicExportingMetricReader,
@@ -74,9 +66,7 @@ export class Telemetry {
     this.tokenCounter = meter.createCounter("pi.tokens", { unit: "{token}" });
     this.costCounter = meter.createCounter("pi.cost", { unit: "USD" });
   }
-  private monitor<T extends { export: (...args: any[]) => void }>(
-    exporter: T,
-  ): T {
+  private monitor<T extends { export: (...args: any[]) => void }>(exporter: T): T {
     const original = exporter.export.bind(exporter);
     exporter.export = ((data: unknown, callback: (result: any) => void) => {
       original(data, (result: any) => {
@@ -99,8 +89,7 @@ export class Telemetry {
     if (!this.cfg.content) return;
     let body: string;
     try {
-      body =
-        typeof value === "string" ? value : (JSON.stringify(value) ?? "null");
+      body = typeof value === "string" ? value : (JSON.stringify(value) ?? "null");
     } catch {
       this.failures++;
       return;
@@ -127,9 +116,7 @@ export class Telemetry {
     if (Number.isFinite(usage?.cost?.total) && usage.cost.total >= 0)
       this.costCounter.add(usage.cost.total, {
         ...attrs,
-        "pi.cost.source": usage.cost.totalFromProvider
-          ? "provider"
-          : "estimated",
+        "pi.cost.source": usage.cost.totalFromProvider ? "provider" : "estimated",
       });
   }
   close() {
