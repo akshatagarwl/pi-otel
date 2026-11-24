@@ -36,7 +36,10 @@ bound. Rejections are handled immediately and counted by the owner.
 Tools begin after their model finishes. The bridge extracts the retained model
 identity into a new parent context, preserving the original single model/tool
 hierarchy without violating settled-span inertness. Carriers are adapter-owned
-opaque maps, not authorization or W3C headers. There is no ambient propagation.
+opaque maps carrying standard W3C `traceparent` and optional `tracestate`, not authorization.
+The provider-local W3C propagator never registers global state. Node 22.19+ is
+required for `Promise.withResolvers`. Effect bounds shutdown waiting; it does not
+cancel SDK work, whose late failures remain observed.
 
 ## Verification and cost
 
@@ -51,7 +54,7 @@ keeping an ordered log.
 A separate real SDK metric-export test covers all three instrument kinds;
 existing decoded OTLP tests cover cumulative token/cost metrics and content.
 Existing real Pi-loader and ownership/race/privacy/cancellation/shutdown tests
-remain. The runner reports **27 passed, 2 skipped** (29 total). The skipped official
+remain. The runner reports **30 passed, 2 skipped** (32 total). The skipped official
 `metrics` cases are “records ordered measurements and optional histogram
 exemplars” and “copies instrument metadata and measurement attributes”. No
 measurement-log shadow adapter is used. All committed fixtures are synthetic.
