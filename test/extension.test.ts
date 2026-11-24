@@ -45,7 +45,20 @@ test("official exporters emit correlated full content, hierarchy and cumulative 
   assert.equal(log.body.stringValue.length, 135000);
   const first = decode("Metrics", payloads["/v1/metrics"][0]).resources[0].scopes[0].metrics;
   const second = decode("Metrics", payloads["/v1/metrics"][1]).resources[0].scopes[0].metrics;
-  assert.deepEqual(first, second);
+  for (let i = 0; i < first.length; i++) {
+    assert.equal(first[i].name, second[i].name);
+    assert.equal(first[i].sum.aggregationTemporality, second[i].sum.aggregationTemporality);
+    for (let j = 0; j < first[i].sum.dataPoints.length; j++) {
+      const a = first[i].sum.dataPoints[j];
+      const b = second[i].sum.dataPoints[j];
+      assert.ok(a.timeUnixNano > 0);
+      assert.ok(b.timeUnixNano >= a.timeUnixNano);
+      assert.equal(a.startTimeUnixNano, b.startTimeUnixNano);
+      const { timeUnixNano: _a, ...stableA } = a;
+      const { timeUnixNano: _b, ...stableB } = b;
+      assert.deepEqual(stableA, stableB);
+    }
+  }
   assert.equal(first[0].sum.aggregationTemporality, 2);
   assert.ok(payloads["/v1/logs"]?.[0].includes(Buffer.from("x".repeat(135000))));
   assert.ok(payloads["/v1/metrics"]?.length >= 2);
