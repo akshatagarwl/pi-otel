@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "exports": {
+    "./adapter": "./src/adapter.ts"
+  },
   "scripts": {
     "test": "vitest run",
     "check": "tsc --noEmit && oxlint src test && oxfmt --check src test",
@@ -22,6 +25,7 @@
   },
   "homepage": "https://github.com/akshatagarwl/pi-otel#readme",
   "dependencies": {
+    "@earendil-works/pi-telemetry": "1.6.0",
     "@opentelemetry/api": "^1.10.0",
     "@opentelemetry/exporter-logs-otlp-proto": "^0.301.2",
     "@opentelemetry/exporter-metrics-otlp-proto": "^0.301.2",

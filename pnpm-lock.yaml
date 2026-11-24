@@ -175,6 +175,9 @@ importers:
 
   .:
     dependencies:
+      '@earendil-works/pi-telemetry':
+        specifier: 1.6.0
+        version: 1.6.0
       '@opentelemetry/api':
         specifier: ^1.10.0
         version: 1.10.0
