@@ -37,7 +37,17 @@ test("official exporters emit correlated full content, hierarchy and cumulative 
   await telemetry.metrics.forceFlush();
   await telemetry.metrics.forceFlush();
   await telemetry.close();
-  const spans = decode("Traces", payloads["/v1/traces"][0]).resources[0].scopes[0].spans;
+  const traceResource = decode("Traces", payloads["/v1/traces"][0]).resources[0];
+  const logResource = decode("Logs", payloads["/v1/logs"][0]).resources[0];
+  const metricResource = decode("Metrics", payloads["/v1/metrics"][0]).resources[0];
+  const identity = (resource: any) =>
+    resource.resource.attributes.filter((attr: any) =>
+      ["service.name", "service.instance.id"].includes(attr.key),
+    );
+  assert.equal(identity(traceResource).length, 2);
+  assert.deepEqual(identity(traceResource), identity(logResource));
+  assert.deepEqual(identity(traceResource), identity(metricResource));
+  const spans = traceResource.scopes[0].spans;
   const log = decode("Logs", payloads["/v1/logs"][0]).resources[0].scopes[0].logs[0];
   assert.equal(spans[0].parentSpanId, spans[1].spanId);
   assert.equal(log.traceId, spans[0].traceId);
