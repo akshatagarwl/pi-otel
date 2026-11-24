@@ -69,20 +69,23 @@ Shutdown is idempotent and awaits exporters for at most four seconds (transport 
 For a local checkout:
 
 ```sh
-npm ci
+pnpm install --frozen-lockfile
 pi -e ./src/index.ts
 # Optionally persist the verified local installation:
 pi install /absolute/path/to/pi-otel
 ```
 
 ```sh
-npm run check
-npm test
-npm audit
+pnpm check
+pnpm build
+pnpm test
+pnpm audit
 ```
 
 Synthetic fixtures only. Tests load the actual pinned Pi 1.6.0 extension loader, exercise its registered event handlers, decode exported OTLP protobuf correlation/parentage and cumulative metrics, and check retry recovery, parallel/nested tools, unknown calls, cancellation, content privacy, 135 KB content and bounded shutdown. They do not call a live model or prove every provider's event behavior. A separate isolated Pi 1.6.0 print-mode smoke verified a real model/tool interaction: six spans (one interaction, three model, two tool), a failed exit-7 tool marked ERROR, eight correlated content logs and received token/cost metrics. Retry/switch/cancellation remain synthetic-handler checks, not live-provider E2E.
 
-Development uses an isolated physical Pi dev dependency. Never symlink a host package tree into `node_modules` before running npm.
+Built with Effect 4.1.5 and XState 6. See [architecture, dependency pins and measured overhead](docs/rat-stack.md).
+
+Development uses an isolated physical Pi dev dependency. Never symlink a host package tree into `node_modules` before running a package manager.
 
 </details>
