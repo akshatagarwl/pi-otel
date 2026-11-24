@@ -1,0 +1,45 @@
+{
+  "name": "pi-otel",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "tsx --test test/*.test.ts",
+    "check": "tsc --noEmit",
+    "format": "prettier --write src test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akshatagarwl/pi-otel.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/akshatagarwl/pi-otel/issues"
+  },
+  "homepage": "https://github.com/akshatagarwl/pi-otel#readme",
+  "dependencies": {
+    "@opentelemetry/api": "^1.10.0",
+    "@opentelemetry/exporter-logs-otlp-proto": "^0.301.2",
+    "@opentelemetry/exporter-metrics-otlp-proto": "^0.301.2",
+    "@opentelemetry/exporter-trace-otlp-proto": "^0.301.2",
+    "@opentelemetry/resources": "^3.1.1",
+    "@opentelemetry/sdk-logs": "^3.1.1",
+    "@opentelemetry/sdk-metrics": "^3.1.1",
+    "@opentelemetry/sdk-trace": "^3.1.1"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "1.6.0",
+    "@types/node": "^26.6.6",
+    "prettier": "^3.10.1",
+    "protobufjs": "^8.8.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "private": true,
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  }
+}
