@@ -46,11 +46,23 @@ Dependencies are installed in this worktree, never linked to live Pi.
 The official runner-independent conformance suite exercises callback admission,
 result/rejection identity, status, inert recording, links, nesting/concurrency,
 and multi-adapter propagation. Its two optional ordered-measurement cases are
-not exercised: OTel aggregates measurements rather than keeping an ordered log.
+explicitly skipped in the test runner: OTel aggregates measurements rather than
+keeping an ordered log.
 A separate real SDK metric-export test covers all three instrument kinds;
 existing decoded OTLP tests cover cumulative token/cost metrics and content.
 Existing real Pi-loader and ownership/race/privacy/cancellation/shutdown tests
-remain. All fixtures are synthetic.
+remain. The runner reports **27 passed, 2 skipped** (29 total). The skipped official
+`metrics` cases are “records ordered measurements and optional histogram
+exemplars” and “copies instrument metadata and measurement attributes”. No
+measurement-log shadow adapter is used. All committed fixtures are synthetic.
+
+A separate parent-run real Pi `-p` smoke (`NATIVE_PI_TELEMETRY_V1`) passed:
+six spans in one trace with root → model → tool parentage, including tools
+parented to ended models; normal status OK (1), failed tool ERROR (2); eight
+of eight content logs correlated with both IDs; four token buckets and cost
+received. This is parent-reported live verification, not a committed fixture.
+Decoded captures (`native-{spans,logs,metrics}.json`) and
+`native-live-smoke.txt` remain private; no real telemetry is checked in.
 
 A local sequential microprobe (Node 26.13.1, 20,000 synchronous spans/run,
 1,000 warmup, three runs, no processors/export/network) measured native SDK
