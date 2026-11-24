@@ -2,7 +2,7 @@
 
 The Coding Agent extension now routes trace recording and usage metrics through
 `@earendil-works/pi-telemetry` **1.6.0**. No configuration change is required.
-Effect **4.1.5** scoped ownership and XState **6.0.0-beta.3** remain unchanged.
+Effect **4.1.5** owns finalization through a scoped Layer and ManagedRuntime disposal.
 
 ```text
 Pi lifecycle hooks → owned deferred callback → TelemetrySpan
@@ -54,7 +54,7 @@ keeping an ordered log.
 A separate real SDK metric-export test covers all three instrument kinds;
 existing decoded OTLP tests cover cumulative token/cost metrics and content.
 Existing real Pi-loader and ownership/race/privacy/cancellation/shutdown tests
-remain. The runner reports **30 passed, 2 skipped** (32 total). The skipped official
+remain. The runner reports **36 passed, 2 skipped** (38 total). The skipped official
 `metrics` cases are “records ordered measurements and optional histogram
 exemplars” and “copies instrument metadata and measurement attributes”. No
 measurement-log shadow adapter is used. All committed fixtures are synthetic.
