@@ -6,7 +6,7 @@ Traces, logs and metrics for Pi 1.6.0. Send OTLP HTTP/protobuf to your receiver,
 
 ## Install
 
-Disable other Pi telemetry extensions (including desek) first. **Do not run both.**
+Load pi-otel only once per session to avoid duplicate telemetry.
 
 ```sh
 pi install git:github.com/akshatagarwl/pi-otel
