@@ -1,3 +1,4 @@
+import { serializeContent, usageMeasurements, type Usage } from "./domain.ts";
 import { Effect } from "effect";
 import { ROOT_CONTEXT, trace } from "@opentelemetry/api";
 import { OTelTelemetryAdapter } from "./adapter.ts";
@@ -99,11 +100,9 @@ export class Telemetry {
     return held;
   }
   content(span: SpanLifetime, session: string, kind: string, value: unknown) {
-    if (!this.cfg.content) return;
-    let body: string;
-    try {
-      body = typeof value === "string" ? value : (JSON.stringify(value) ?? "null");
-    } catch {
+    const content = serializeContent(this.cfg.content, value);
+    if (content.kind === "disabled") return;
+    if (content.kind === "invalid") {
       this.failures++;
       return;
     }
@@ -111,27 +110,21 @@ export class Telemetry {
     if (!sc) return;
     this.logs.getLogger("pi-otel").emit({
       context: trace.setSpanContext(ROOT_CONTEXT, sc),
-      body,
+      body: content.body,
       attributes: {
         "gen_ai.conversation.id": session,
         "pi.content.kind": kind,
-        "pi.content.bytes": Buffer.byteLength(body),
+        "pi.content.bytes": content.bytes,
         trace_id: sc.traceId,
         span_id: sc.spanId,
       },
     });
   }
-  usage(usage: any, attrs: Record<string, string>) {
-    for (const key of ["input", "output", "cacheRead", "cacheWrite"]) {
-      const value = usage?.[key];
-      if (Number.isFinite(value) && value >= 0)
-        this.tokenCounter.add(value, { ...attrs, "pi.token.type": key });
-    }
-    if (Number.isFinite(usage?.cost?.total) && usage.cost.total >= 0)
-      this.costCounter.add(usage.cost.total, {
-        ...attrs,
-        "pi.cost.source": usage.cost.totalFromProvider ? "provider" : "estimated",
-      });
+  usage(usage: Usage | null | undefined, attrs: Record<string, string>) {
+    const { tokens, cost } = usageMeasurements(usage);
+    for (const { bucket, value } of tokens)
+      this.tokenCounter.add(value, { ...attrs, "pi.token.type": bucket });
+    if (cost) this.costCounter.add(cost.value, { ...attrs, "pi.cost.source": cost.source });
   }
   close() {
     return (this.closing ??= this.shutdown());

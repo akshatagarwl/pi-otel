@@ -13,6 +13,13 @@ Reference: joelhooks/rat-stack `25296bbe66a689db9ac732ef1bb92155ef29f02f`.
 
 No Turborepo for one package; no extra apps, infrastructure, HTTP/MCP surfaces, UI framework, or custom OTLP implementation. Pi loads TypeScript directly, so `build` is the compiler validation gate rather than a second extension artifact.
 
+## Functional core, imperative shell
+
+- `src/domain.ts` derives outcomes, model/tool attributes, disjoint usage measurements and content serialization results from supplied values. It has no SDK, filesystem, environment, clock, random or network dependencies. Serialization assumes ordinary JSON data; caller-defined getters/`toJSON` can execute code and serialization failures remain explicit results.
+- `src/config-core.ts` validates supplied environment snapshots and optional file text using the pinned Effect schemas. `src/config.ts` alone acquires that text and the default environment/path. A malformed file still fails even when environment overrides are present.
+- Pi callbacks in `src/index.ts` interpret these decisions. They retain session/generation guards, parent and lifetime handles, and asynchronous startup ownership. `runtime.ts`, `lifetime.ts`, `telemetry.ts` and `adapter.ts` own Effect/XState resources, SDK creation, randomness, span settlement, W3C propagation and correlated export. No general command framework or second event-state machine was added.
+- `test/domain.test.ts` exercises deterministic decisions independently of providers and I/O; existing config filesystem, loader, lifecycle, ownership and decoded-exporter suites remain integration coverage. Pure tests make no live-provider or performance claims. A separate isolated Pi print-mode smoke of this branch received five spans (interaction, two models, two tools including one error), seven content logs with actual OTLP correlation, four token buckets and cost. Both tools were issued in one response. Retry/switch/cancellation still rely on synthetic coverage.
+
 ## Verify without activation
 
 ```sh

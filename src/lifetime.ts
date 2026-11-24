@@ -1,6 +1,7 @@
 import type { SpanAttributes, TelemetryContext, TelemetrySpan } from "@earendil-works/pi-telemetry";
 
-export type Outcome = "ok" | "error" | "cancelled" | "interrupted";
+import type { Outcome } from "./domain.ts";
+export type { Outcome } from "./domain.ts";
 /** Event hooks cannot return the callback promise (it would block event delivery). */
 export class SpanLifetime {
   readonly span: TelemetrySpan;

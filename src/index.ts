@@ -1,3 +1,11 @@
+import {
+  modelOutcome,
+  completionOutcome,
+  requestAttributes,
+  responseAttributes,
+  toolAttributes,
+  toolCompletionAttributes,
+} from "./domain.ts";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { SpanLifetime as Span } from "./lifetime.ts";
 import { config } from "./config.ts";
@@ -73,33 +81,20 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
     if (ctx.sessionManager.getSessionId() !== session) return;
     if (event.message.role !== "assistant" || !telemetry) return;
     finish(model, "interrupted");
-    model = telemetry.span("pi.model", session, ensureInteraction(), {
-      "gen_ai.provider.name": ctx.model?.provider ?? "unknown",
-      "gen_ai.request.model": ctx.model?.id ?? "unknown",
-    });
+    model = telemetry.span("pi.model", session, ensureInteraction(), requestAttributes(ctx.model));
   });
   pi.on("message_end", (event, ctx) => {
     if (ctx.sessionManager.getSessionId() !== session) return;
     const message = event.message;
     if (message.role !== "assistant" || !model) return;
-    model.setAttributes({
-      "gen_ai.provider.name": message.provider,
-      "gen_ai.response.model": message.model,
-    });
+    model.setAttributes(responseAttributes(message.provider, message.model, message.stopReason));
     telemetry?.content(model, session, "assistant", message.content);
     telemetry?.usage(message.usage, {
       "gen_ai.provider.name": message.provider,
       "gen_ai.request.model": message.model,
     });
-    const outcome =
-      message.stopReason === "aborted"
-        ? "cancelled"
-        : message.stopReason === "error"
-          ? "error"
-          : "ok";
+    const outcome = modelOutcome(message.stopReason);
     failed = outcome === "error";
-    model.setAttribute("gen_ai.response.finish_reasons", [message.stopReason]);
-    if (outcome === "error") model.setAttribute("error.type", "model_error");
     finish(model, outcome);
     lastModel = model;
     model = undefined;
@@ -108,9 +103,12 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
     if (ctx.sessionManager.getSessionId() !== session) return;
     if (!telemetry || tools.has(event.toolCallId)) return;
     const parent = event.parentToolCallId ? tools.get(event.parentToolCallId) : lastModel;
-    const span = telemetry.span("pi.tool", session, parent ?? ensureInteraction(), {
-      "gen_ai.tool.name": event.toolName,
-    });
+    const span = telemetry.span(
+      "pi.tool",
+      session,
+      parent ?? ensureInteraction(),
+      toolAttributes(event.toolName),
+    );
     tools.set(event.toolCallId, span);
     telemetry.content(span, session, "tool.preflight.input", event.args);
   });
@@ -120,21 +118,21 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
     const parent = event.parentToolCallId ? tools.get(event.parentToolCallId) : lastModel;
     const span =
       tools.get(event.toolCallId) ??
-      telemetry.span("pi.tool", session, parent ?? ensureInteraction(), {
-        "gen_ai.tool.name": event.toolName,
-      });
+      telemetry.span(
+        "pi.tool",
+        session,
+        parent ?? ensureInteraction(),
+        toolAttributes(event.toolName),
+      );
     telemetry.content(span, session, "tool.output", event.result);
-    const outcome = ctx.signal?.aborted ? "cancelled" : event.isError ? "error" : "ok";
-    if (outcome === "error") span.setAttribute("error.type", "tool_error");
-    if (event.durationMs !== undefined)
-      span.setAttribute("pi.tool.execution.duration_ms", event.durationMs);
-    span.setAttribute("pi.tool.executed", event.durationMs !== undefined);
+    const outcome = completionOutcome(ctx.signal?.aborted === true, event.isError);
+    span.setAttributes(toolCompletionAttributes(outcome, event.durationMs));
     finish(span, outcome);
     tools.delete(event.toolCallId);
   });
   pi.on("agent_settled", (event, ctx) => {
     if (ctx.sessionManager.getSessionId() !== session) return;
-    cleanup(event.aborted ? "cancelled" : failed ? "error" : "ok");
+    cleanup(completionOutcome(event.aborted, failed));
   });
   pi.on("session_shutdown", async (_event, ctx) => {
     if (ctx.sessionManager.getSessionId() !== session) return;
