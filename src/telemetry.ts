@@ -31,7 +31,7 @@ export class Telemetry {
   private closing?: Promise<void>;
   constructor(readonly cfg: Config) {
     const resource = resourceFromAttributes({
-      "service.name": "pi",
+      "service.name": cfg.serviceName ?? "pi",
       "service.instance.id": randomUUID(),
     });
     const options = (signal: string) => ({

@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 export interface Config {
   endpoint?: string;
+  serviceName?: string;
   content: boolean;
   headers: Record<string, string>;
 }
@@ -49,5 +50,8 @@ export function config(
     Object.values(headers).some((v) => typeof v !== "string")
   )
     throw new Error("Invalid pi-otel headers");
-  return { endpoint, content, headers };
+  const serviceName = env.PI_OTEL_SERVICE_NAME ?? file.serviceName ?? "pi";
+  if (typeof serviceName !== "string" || !serviceName.trim())
+    throw new Error("Invalid service name");
+  return { endpoint, content, headers, serviceName };
 }
