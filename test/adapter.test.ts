@@ -76,3 +76,32 @@ for (const c of cases) {
     it(`${c.group}: ${c.name}`, c.run);
   }
 }
+
+it("interoperates with remote W3C traceparent and tracestate without globals", async () => {
+  const { ROOT_CONTEXT, trace } = await import("@opentelemetry/api");
+  const { expect } = await import("vitest");
+  const exporter = new InMemorySpanExporter();
+  const provider = new TracerProvider({ spanProcessors: [new SimpleSpanProcessor({ exporter })] });
+  const adapter = new OTelTelemetryAdapter(provider.getTracer("remote"));
+  const remote = {
+    traceparent: "00-0123456789abcdef0123456789abcdef-0123456789abcdef-01",
+    tracestate: "vendor=value",
+  };
+  try {
+    expect(adapter.propagation.inject(adapter)).toBeUndefined();
+    expect(adapter.propagation.extract({ traceparent: "malformed" })).toBe(adapter);
+    const parent = adapter.propagation.extract(remote);
+    expect(adapter.propagation.inject(parent)).toEqual(remote);
+    let retained;
+    await parent.startSpan({ name: "child" }, (span) => {
+      retained = span;
+    });
+    const sc = adapter.identity(retained!);
+    expect(sc?.traceId).toBe("0123456789abcdef0123456789abcdef");
+    expect(adapter.propagation.inject(retained!)?.tracestate).toBe("vendor=value");
+    expect(exporter.getFinishedSpans()[0].parentSpanContext?.isRemote).toBe(true);
+    expect(trace.getSpanContext(ROOT_CONTEXT)).toBeUndefined();
+  } finally {
+    await provider.shutdown();
+  }
+});
