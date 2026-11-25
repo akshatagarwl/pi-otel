@@ -43,6 +43,11 @@ export function toolResultAttributes(result: unknown) {
     ?.exit_code;
   return Number.isInteger(code) ? { "process.exit.code": code as number } : {};
 }
+/** Tool results repeat their text in details/structuredContent; the model sees only content. */
+export function toolOutputContent(result: unknown) {
+  const content = (result as { content?: unknown } | null)?.content;
+  return Array.isArray(content) ? content : result;
+}
 
 export interface Usage {
   input?: unknown;

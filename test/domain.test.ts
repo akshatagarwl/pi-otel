@@ -8,6 +8,7 @@ import {
   toolAttributes,
   toolCompletionAttributes,
   toolResultAttributes,
+  toolOutputContent,
   serializeContent,
   usageMeasurements,
   usageAttributes,
@@ -43,6 +44,9 @@ describe("pure event decisions (no providers or I/O)", () => {
     });
     expect(toolResultAttributes({ structuredContent: { exit_code: null } })).toEqual({});
     expect(toolResultAttributes(null)).toEqual({});
+    const text = [{ type: "text", text: "out" }];
+    expect(toolOutputContent({ content: text, details: { output: "out" } })).toBe(text);
+    expect(toolOutputContent({ content: "legacy" })).toEqual({ content: "legacy" });
     expect(toolAttributes("read")).toEqual({ "gen_ai.tool.name": "read" });
     expect(toolCompletionAttributes("cancelled")["error.type"]).toBeUndefined();
     expect(toolCompletionAttributes("error", 0)).toEqual({

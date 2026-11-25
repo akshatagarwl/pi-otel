@@ -91,7 +91,11 @@ test("Pi loader lifecycle: retries, parallel/nested/failing tools, cancellation 
     await emit("tool_execution_end", {
       toolCallId: "a",
       toolName: "bash",
-      result: { content: "ok" },
+      result: {
+        content: [{ type: "text", text: "ok-output" }],
+        details: { duplicate: "details-copy" },
+        structuredContent: { output: "structured-copy", exit_code: 0 },
+      },
       isError: false,
       durationMs: 10,
     });
@@ -135,6 +139,11 @@ test("Pi loader lifecycle: retries, parallel/nested/failing tools, cancellation 
     assert.equal(attr(failedModel, "exception.message").stringValue, "token expired");
     const logs = payloads["/v1/logs"].flatMap((b) =>
       decode("Logs", b).resources.flatMap((r: any) => r.scopes.flatMap((s: any) => s.logs)),
+    );
+    const bodies = logs.map((log: any) => log.body?.stringValue ?? "");
+    assert.ok(bodies.some((b: string) => b.includes("ok-output")));
+    assert.ok(
+      !bodies.some((b: string) => b.includes("details-copy") || b.includes("structured-copy")),
     );
     for (const log of logs)
       assert.ok(spans.some((s: any) => s.spanId === log.spanId && s.traceId === log.traceId));

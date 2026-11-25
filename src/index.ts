@@ -7,6 +7,7 @@ import {
   toolAttributes,
   toolCompletionAttributes,
   toolResultAttributes,
+  toolOutputContent,
   usageAttributes,
 } from "./domain.ts";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -130,7 +131,7 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
         parent ?? ensureInteraction(),
         toolAttributes(event.toolName),
       );
-    telemetry.content(span, session, "tool.output", event.result);
+    telemetry.content(span, session, "tool.output", toolOutputContent(event.result));
     const outcome = completionOutcome(ctx.signal?.aborted === true, event.isError);
     span.setAttributes({
       ...toolCompletionAttributes(outcome, event.durationMs),
