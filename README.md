@@ -2,7 +2,7 @@
 
 ![Illustrative Pi interaction trace with model and tool spans, correlated content logs, and token and cost metrics exported over OTLP.](assets/overview.svg)
 
-Traces, logs and metrics for Pi 1.6.0. Send OTLP HTTP/protobuf to your receiver, including [sigiro](https://sigiro.com).
+Traces, logs and metrics for Pi 1.6.0 (Node 22.19+). Send OTLP HTTP/protobuf to your receiver, including [sigiro](https://sigiro.com).
 
 ## Install
 
@@ -63,27 +63,16 @@ Shutdown is idempotent and awaits exporters for at most four seconds (transport 
 
 </details>
 
-<details>
-<summary>Verification & local development</summary>
+## Library use
 
-For a local checkout:
+`pi-otel/adapter` exports `OTelTelemetryAdapter`, a `@earendil-works/pi-telemetry` adapter. Pass it your own OTel tracer and, optionally, a meter. It registers no global providers and captures no content.
+
+## Development
 
 ```sh
 pnpm install --frozen-lockfile
-pi -e ./src/index.ts
-# Optionally persist the verified local installation:
-pi install /absolute/path/to/pi-otel
+pi -e ./src/index.ts      # try a local checkout
+pnpm check && pnpm build && pnpm test
 ```
 
-```sh
-pnpm check
-pnpm build
-pnpm test
-pnpm audit
-```
-
-Synthetic fixtures only. Tests load the actual pinned Pi 1.6.0 extension loader, exercise its registered event handlers, decode exported OTLP protobuf correlation/parentage and cumulative metrics, and check retry recovery, parallel/nested tools, unknown calls, cancellation, content privacy, 135 KB content and bounded shutdown. They do not call a live model or prove every provider's event behavior. A separate isolated Pi 1.6.0 print-mode smoke verified a real model/tool interaction: six spans (one interaction, three model, two tool), a failed exit-7 tool marked ERROR, eight correlated content logs and received token/cost metrics. Retry/switch/cancellation remain synthetic-handler checks, not live-provider E2E.
-
-Development uses an isolated physical Pi dev dependency. Never symlink a host package tree into `node_modules` before running a package manager.
-
-</details>
+Tests use synthetic data only and run against the real Pi 1.6.0 extension loader. They do not call a live model.
