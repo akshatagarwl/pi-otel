@@ -7,6 +7,7 @@ import {
   responseAttributes,
   toolAttributes,
   toolCompletionAttributes,
+  toolResultAttributes,
   serializeContent,
   usageMeasurements,
 } from "../src/domain.ts";
@@ -36,6 +37,11 @@ describe("pure event decisions (no providers or I/O)", () => {
     });
     expect(modelError("error")).toBeUndefined();
     expect(modelError("stop", "ignored")).toBeUndefined();
+    expect(toolResultAttributes({ structuredContent: { exit_code: 1 } })).toEqual({
+      "process.exit.code": 1,
+    });
+    expect(toolResultAttributes({ structuredContent: { exit_code: null } })).toEqual({});
+    expect(toolResultAttributes(null)).toEqual({});
     expect(toolAttributes("read")).toEqual({ "gen_ai.tool.name": "read" });
     expect(toolCompletionAttributes("cancelled")["error.type"]).toBeUndefined();
     expect(toolCompletionAttributes("error", 0)).toEqual({

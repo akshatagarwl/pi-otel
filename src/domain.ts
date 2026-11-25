@@ -37,6 +37,12 @@ export function toolCompletionAttributes(outcome: Outcome, durationMs?: number) 
     ...(outcome === "error" ? { "error.type": "tool_error" } : {}),
   };
 }
+/** Shell tools report the command's exit code in structuredContent. */
+export function toolResultAttributes(result: unknown) {
+  const code = (result as { structuredContent?: { exit_code?: unknown } } | null)?.structuredContent
+    ?.exit_code;
+  return Number.isInteger(code) ? { "process.exit.code": code as number } : {};
+}
 
 export interface Usage {
   input?: unknown;

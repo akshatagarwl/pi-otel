@@ -74,7 +74,7 @@ test("Pi loader lifecycle: retries, parallel/nested/failing tools, cancellation 
     await emit("tool_execution_end", {
       toolCallId: "b",
       toolName: "bash",
-      result: { content: "failed-secret" },
+      result: { content: "failed-secret", structuredContent: { exit_code: 2 } },
       isError: true,
       durationMs: 5,
     });
@@ -128,6 +128,8 @@ test("Pi loader lifecycle: retries, parallel/nested/failing tools, cancellation 
     const failedModel = spans.find(
       (s: any) => s.name === "pi.model" && attr(s, "pi.outcome")?.stringValue === "error",
     );
+    const failedTool = spans.find((s: any) => s.name === "pi.tool" && attr(s, "process.exit.code"));
+    assert.equal(Number(attr(failedTool, "process.exit.code").intValue), 2);
     assert.equal(failedModel.status.message, "token expired");
     assert.equal(attr(failedModel, "exception.message").stringValue, "token expired");
     const logs = payloads["/v1/logs"].flatMap((b) =>

@@ -6,6 +6,7 @@ import {
   responseAttributes,
   toolAttributes,
   toolCompletionAttributes,
+  toolResultAttributes,
 } from "./domain.ts";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { SpanLifetime as Span } from "./lifetime.ts";
@@ -127,7 +128,10 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
       );
     telemetry.content(span, session, "tool.output", event.result);
     const outcome = completionOutcome(ctx.signal?.aborted === true, event.isError);
-    span.setAttributes(toolCompletionAttributes(outcome, event.durationMs));
+    span.setAttributes({
+      ...toolCompletionAttributes(outcome, event.durationMs),
+      ...toolResultAttributes(event.result),
+    });
     span.finish(outcome);
     tools.delete(event.toolCallId);
   });
