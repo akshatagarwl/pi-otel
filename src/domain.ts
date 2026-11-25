@@ -21,6 +21,12 @@ export function responseAttributes(provider: string, model: string, stopReason: 
     ...(modelOutcome(stopReason) === "error" ? { "error.type": "model_error" } : {}),
   };
 }
+/** Provider error text for failed model calls; absent when Pi recorded none. */
+export function modelError(stopReason: string, errorMessage?: string) {
+  return modelOutcome(stopReason) === "error" && errorMessage
+    ? { name: "model_error", message: errorMessage }
+    : undefined;
+}
 export function toolAttributes(name: string) {
   return { "gen_ai.tool.name": name };
 }

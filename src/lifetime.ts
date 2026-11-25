@@ -26,11 +26,11 @@ export class SpanLifetime {
   setAttributes(attrs: SpanAttributes) {
     this.span.setAttributes(attrs);
   }
-  finish(outcome: Outcome) {
+  finish(outcome: Outcome, error?: { name: string; message: string }) {
     if (this.finished) return;
     this.finished = true;
     this.span.setAttributes({ "pi.outcome": outcome });
-    if (outcome === "error") this.span.setStatus({ status: "error" });
+    if (outcome === "error") this.span.setStatus({ status: "error", ...(error ? { error } : {}) });
     this.release();
   }
 }

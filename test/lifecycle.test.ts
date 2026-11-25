@@ -30,12 +30,13 @@ test("Pi loader lifecycle: retries, parallel/nested/failing tools, cancellation 
   const emit = async (name: string, event = {}) => {
     for (const fn of handlers.get(name) ?? []) await fn(event, ctx);
   };
-  const assistant = (stopReason: string) => ({
+  const assistant = (stopReason: string, errorMessage?: string) => ({
     message: {
       role: "assistant",
       provider: "synthetic",
       model: "test",
       stopReason,
+      errorMessage,
       content: [{ type: "text", text: "answer-secret" }],
       usage: {
         input: 300,
@@ -53,7 +54,7 @@ test("Pi loader lifecycle: retries, parallel/nested/failing tools, cancellation 
       prompt: "prompt-secret",
     });
     await emit("message_start", { message: { role: "assistant" } });
-    await emit("message_end", assistant("error"));
+    await emit("message_end", assistant("error", "token expired"));
     await emit("agent_end");
     await emit("agent_start");
     await emit("message_start", { message: { role: "assistant" } });
@@ -124,6 +125,11 @@ test("Pi loader lifecycle: retries, parallel/nested/failing tools, cancellation 
       assert.ok(spans.some((s: any) => s.spanId === span.parentSpanId));
     const errors = spans.filter((s: any) => s.status?.code === 2);
     assert.equal(errors.length, 3);
+    const failedModel = spans.find(
+      (s: any) => s.name === "pi.model" && attr(s, "pi.outcome")?.stringValue === "error",
+    );
+    assert.equal(failedModel.status.message, "token expired");
+    assert.equal(attr(failedModel, "exception.message").stringValue, "token expired");
     const logs = payloads["/v1/logs"].flatMap((b) =>
       decode("Logs", b).resources.flatMap((r: any) => r.scopes.flatMap((s: any) => s.logs)),
     );

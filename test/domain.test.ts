@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   completionOutcome,
+  modelError,
   modelOutcome,
   requestAttributes,
   responseAttributes,
@@ -29,6 +30,12 @@ describe("pure event decisions (no providers or I/O)", () => {
     expect(requestAttributes()["gen_ai.request.model"]).toBe("unknown");
     expect(responseAttributes("p", "m", "error")["error.type"]).toBe("model_error");
     expect(responseAttributes("p", "m", "stop")["error.type"]).toBeUndefined();
+    expect(modelError("error", "token expired")).toEqual({
+      name: "model_error",
+      message: "token expired",
+    });
+    expect(modelError("error")).toBeUndefined();
+    expect(modelError("stop", "ignored")).toBeUndefined();
     expect(toolAttributes("read")).toEqual({ "gen_ai.tool.name": "read" });
     expect(toolCompletionAttributes("cancelled")["error.type"]).toBeUndefined();
     expect(toolCompletionAttributes("error", 0)).toEqual({

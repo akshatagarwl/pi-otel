@@ -1,4 +1,5 @@
 import {
+  modelError,
   modelOutcome,
   completionOutcome,
   requestAttributes,
@@ -95,7 +96,7 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
     });
     const outcome = modelOutcome(message.stopReason);
     failed = outcome === "error";
-    model.finish(outcome);
+    model.finish(outcome, modelError(message.stopReason, message.errorMessage));
     lastModel = model;
     model = undefined;
   });
