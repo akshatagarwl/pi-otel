@@ -10,6 +10,7 @@ import {
   toolResultAttributes,
   serializeContent,
   usageMeasurements,
+  usageAttributes,
 } from "../src/domain.ts";
 import { resolveConfig } from "../src/config-core.ts";
 
@@ -49,6 +50,18 @@ describe("pure event decisions (no providers or I/O)", () => {
       "pi.tool.execution.duration_ms": 0,
       "error.type": "tool_error",
     });
+  });
+  test("span usage follows GenAI semconv: input includes cached input", () => {
+    expect(usageAttributes({ input: 300, output: 80, cacheRead: 600, cacheWrite: 100 })).toEqual({
+      "gen_ai.usage.input_tokens": 1000,
+      "gen_ai.usage.output_tokens": 80,
+      "gen_ai.usage.cache_read.input_tokens": 600,
+      "gen_ai.usage.cache_creation.input_tokens": 100,
+    });
+    expect(usageAttributes({ output: 5, input: Number.NaN })).toEqual({
+      "gen_ai.usage.output_tokens": 5,
+    });
+    expect(usageAttributes(undefined)).toEqual({});
   });
   test("disjoint finite usage includes zero and ignores totals/reasoning/components", () => {
     const usage = Object.freeze({

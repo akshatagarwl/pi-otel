@@ -82,3 +82,24 @@ export function serializeContent(enabled: boolean, value: unknown): SerializedCo
     return { kind: "invalid" };
   }
 }
+
+/** GenAI semconv span usage; input_tokens includes cached input, unlike Pi's disjoint buckets. */
+export function usageAttributes(usage: Usage | null | undefined) {
+  const tokens = Object.fromEntries(
+    usageMeasurements(usage).tokens.map(({ bucket, value }) => [bucket, value]),
+  ) as Partial<Record<"input" | "output" | "cacheRead" | "cacheWrite", number>>;
+  const attrs: Record<string, number> = {};
+  if (
+    tokens.input !== undefined ||
+    tokens.cacheRead !== undefined ||
+    tokens.cacheWrite !== undefined
+  )
+    attrs["gen_ai.usage.input_tokens"] =
+      (tokens.input ?? 0) + (tokens.cacheRead ?? 0) + (tokens.cacheWrite ?? 0);
+  if (tokens.output !== undefined) attrs["gen_ai.usage.output_tokens"] = tokens.output;
+  if (tokens.cacheRead !== undefined)
+    attrs["gen_ai.usage.cache_read.input_tokens"] = tokens.cacheRead;
+  if (tokens.cacheWrite !== undefined)
+    attrs["gen_ai.usage.cache_creation.input_tokens"] = tokens.cacheWrite;
+  return attrs;
+}

@@ -7,6 +7,7 @@ import {
   toolAttributes,
   toolCompletionAttributes,
   toolResultAttributes,
+  usageAttributes,
 } from "./domain.ts";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { SpanLifetime as Span } from "./lifetime.ts";
@@ -89,7 +90,10 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
     if (ctx.sessionManager.getSessionId() !== session) return;
     const message = event.message;
     if (message.role !== "assistant" || !model) return;
-    model.setAttributes(responseAttributes(message.provider, message.model, message.stopReason));
+    model.setAttributes({
+      ...responseAttributes(message.provider, message.model, message.stopReason),
+      ...usageAttributes(message.usage),
+    });
     telemetry?.content(model, session, "assistant", message.content);
     telemetry?.usage(message.usage, {
       "gen_ai.provider.name": message.provider,
