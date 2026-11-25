@@ -103,7 +103,11 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
     });
     const outcome = modelOutcome(message.stopReason);
     failed = outcome === "error";
-    model.finish(outcome, modelError(message.stopReason, message.errorMessage));
+    // Provider error text can echo request content, so it follows the content opt-in.
+    const error = telemetry?.cfg.content
+      ? modelError(message.stopReason, message.errorMessage)
+      : undefined;
+    model.finish(outcome, error);
     lastModel = model;
     model = undefined;
   });
