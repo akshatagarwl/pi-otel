@@ -32,6 +32,7 @@ export class Telemetry {
     const resource = resourceFromAttributes({
       "service.name": cfg.serviceName ?? "pi",
       "service.instance.id": randomUUID(),
+      ...(cfg.serviceVersion ? { "service.version": cfg.serviceVersion } : {}),
     });
     const options = (signal: string) => ({
       url: `${cfg.endpoint!.replace(/\/$/, "")}/v1/${signal}`,

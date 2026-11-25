@@ -18,6 +18,8 @@ const decodeHeaders = Schema.decodeUnknownSync(Schema.Record(Schema.String, Sche
 export interface Config {
   endpoint?: string;
   serviceName?: string;
+  /** Host Pi version, supplied by the extension rather than configuration. */
+  serviceVersion?: string;
   content: boolean;
   headers: Record<string, string>;
 }

@@ -122,6 +122,9 @@ test("Pi loader lifecycle: retries, parallel/nested/failing tools, cancellation 
     const spans = payloads["/v1/traces"].flatMap((b) =>
       decode("Traces", b).resources.flatMap((r: any) => r.scopes.flatMap((s: any) => s.spans)),
     );
+    const resource = decode("Traces", payloads["/v1/traces"][0]).resources[0].resource;
+    const version = resource.attributes.find((a: any) => a.key === "service.version");
+    assert.match(version?.value.stringValue ?? "", /^\d+\.\d+\.\d+/);
     const attr = (s: any, k: string) => s.attributes?.find((a: any) => a.key === k)?.value;
     const interactions = spans.filter((s: any) => s.name === "pi.interaction");
     assert.equal(interactions.length, 2);

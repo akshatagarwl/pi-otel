@@ -11,7 +11,7 @@ import {
   toolOutputContent,
   usageAttributes,
 } from "./domain.ts";
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { VERSION, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { SpanLifetime as Span } from "./lifetime.ts";
 import { config } from "./config.ts";
 import { Telemetry } from "./telemetry.ts";
@@ -53,7 +53,7 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
       if (generation !== ownGeneration) return;
       const cfg = config();
       if (cfg.endpoint) {
-        const pending = start(cfg).then(async (created) => {
+        const pending = start({ ...cfg, serviceVersion: VERSION }).then(async (created) => {
           if (generation !== ownGeneration) {
             await created.close();
             return;
