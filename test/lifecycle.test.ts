@@ -37,7 +37,10 @@ test("Pi loader lifecycle: retries, parallel/nested/failing tools, cancellation 
       model: "test",
       stopReason,
       errorMessage,
-      content: [{ type: "text", text: "answer-secret" }],
+      content: [
+        { type: "thinking", thinking: "plan", thinkingSignature: "opaque-cipher" },
+        { type: "text", text: "answer-secret" },
+      ],
       usage: {
         input: 300,
         cacheRead: 600,
@@ -142,6 +145,8 @@ test("Pi loader lifecycle: retries, parallel/nested/failing tools, cancellation 
     );
     const bodies = logs.map((log: any) => log.body?.stringValue ?? "");
     assert.ok(bodies.some((b: string) => b.includes("ok-output")));
+    assert.ok(bodies.some((b: string) => b.includes("answer-secret")));
+    assert.ok(!bodies.some((b: string) => b.includes("opaque-cipher")));
     assert.ok(
       !bodies.some((b: string) => b.includes("details-copy") || b.includes("structured-copy")),
     );

@@ -48,6 +48,15 @@ export function toolOutputContent(result: unknown) {
   const content = (result as { content?: unknown } | null)?.content;
   return Array.isArray(content) ? content : result;
 }
+/** Thinking signatures are opaque provider ciphertext: useless to readers, costly to store. */
+export function assistantContent(content: unknown) {
+  if (!Array.isArray(content)) return content;
+  return content.map((block) => {
+    if (block?.type !== "thinking" || !("thinkingSignature" in block)) return block;
+    const { thinkingSignature: _signature, ...rest } = block;
+    return rest;
+  });
+}
 
 export interface Usage {
   input?: unknown;

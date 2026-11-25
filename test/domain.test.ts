@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   completionOutcome,
+  assistantContent,
   modelError,
   modelOutcome,
   requestAttributes,
@@ -47,6 +48,13 @@ describe("pure event decisions (no providers or I/O)", () => {
     const text = [{ type: "text", text: "out" }];
     expect(toolOutputContent({ content: text, details: { output: "out" } })).toBe(text);
     expect(toolOutputContent({ content: "legacy" })).toEqual({ content: "legacy" });
+    const thinking = { type: "thinking", thinking: "plan", thinkingSignature: "cipher" };
+    const textBlock = { type: "text", text: "hi" };
+    expect(assistantContent([thinking, textBlock])).toEqual([
+      { type: "thinking", thinking: "plan" },
+      textBlock,
+    ]);
+    expect(thinking.thinkingSignature).toBe("cipher");
     expect(toolAttributes("read")).toEqual({ "gen_ai.tool.name": "read" });
     expect(toolCompletionAttributes("cancelled")["error.type"]).toBeUndefined();
     expect(toolCompletionAttributes("error", 0)).toEqual({

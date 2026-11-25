@@ -1,4 +1,5 @@
 import {
+  assistantContent,
   modelError,
   modelOutcome,
   completionOutcome,
@@ -95,7 +96,7 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
       ...responseAttributes(message.provider, message.model, message.stopReason),
       ...usageAttributes(message.usage),
     });
-    telemetry?.content(model, session, "assistant", message.content);
+    telemetry?.content(model, session, "assistant", assistantContent(message.content));
     telemetry?.usage(message.usage, {
       "gen_ai.provider.name": message.provider,
       "gen_ai.request.model": message.model,
