@@ -117,3 +117,23 @@ export function usageAttributes(usage: Usage | null | undefined) {
     attrs["gen_ai.usage.cache_creation.input_tokens"] = tokens.cacheWrite;
   return attrs;
 }
+
+export type ExportHealth =
+  | { state: "failing"; failures: number; signal: string; reason: string }
+  | { state: "recovered"; failures: number };
+
+/** User-facing warning text; never includes the endpoint or credentials. */
+export function exportHealthMessage(health: ExportHealth): {
+  message: string;
+  level: "warning" | "info";
+} {
+  return health.state === "failing"
+    ? {
+        message: `pi-otel: ${health.failures} telemetry exports failed in a row (${health.signal}: ${health.reason}); data is being dropped`,
+        level: "warning",
+      }
+    : {
+        message: `pi-otel: telemetry exports recovered after ${health.failures} failures; data from that window was dropped`,
+        level: "info",
+      };
+}

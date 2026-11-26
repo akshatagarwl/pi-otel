@@ -1,4 +1,4 @@
-import { serializeContent, usageMeasurements, type Usage } from "./domain.ts";
+import { serializeContent, usageMeasurements, type ExportHealth, type Usage } from "./domain.ts";
 import { Effect } from "effect";
 import { ROOT_CONTEXT, trace } from "@opentelemetry/api";
 import { OTelTelemetryAdapter } from "./adapter.ts";
@@ -18,11 +18,23 @@ import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-proto";
 import { randomUUID } from "node:crypto";
 import type { Config } from "./config.ts";
 
+/** Consecutive failed exports before the user is warned that data is being dropped. */
+export const EXPORT_WARN_AFTER = 3;
+
+/** Exporter errors can echo the endpoint; keep the reason without it. */
+export function exportReason(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error ?? "unknown error");
+  return message.replace(/\b[a-z][a-z0-9+.-]*:\/\/\S+/gi, "<endpoint>").slice(0, 160);
+}
+
 export class Telemetry {
   traces: TracerProvider;
   logs: LoggerProvider;
   metrics: MeterProvider;
   failures = 0;
+  /** Failed exports since the last successful one, across all signals. */
+  exportFailures = 0;
+  onExportHealth?: (health: ExportHealth) => void;
   readonly adapter: OTelTelemetryAdapter;
   private held = new Set<SpanLifetime>();
   private tokenCounter;
@@ -43,7 +55,7 @@ export class Telemetry {
       resource,
       spanProcessors: [
         new BatchSpanProcessor({
-          exporter: this.monitor(new OTLPTraceExporter(options("traces"))),
+          exporter: this.monitor("traces", new OTLPTraceExporter(options("traces"))),
         }),
       ],
     });
@@ -51,7 +63,7 @@ export class Telemetry {
       resource,
       processors: [
         new BatchLogRecordProcessor({
-          exporter: this.monitor(new OTLPLogExporter(options("logs"))),
+          exporter: this.monitor("logs", new OTLPLogExporter(options("logs"))),
         }),
       ],
     });
@@ -60,6 +72,7 @@ export class Telemetry {
       readers: [
         new PeriodicExportingMetricReader({
           exporter: this.monitor(
+            "metrics",
             new OTLPMetricExporter({
               ...options("metrics"),
               temporalityPreference: AggregationTemporality.CUMULATIVE,
@@ -75,15 +88,35 @@ export class Telemetry {
     this.tokenCounter = this.adapter.metrics!.counter("pi.tokens", { unit: "{token}" });
     this.costCounter = this.adapter.metrics!.counter("pi.cost", { unit: "USD" });
   }
-  private monitor<T extends { export: (...args: any[]) => void }>(exporter: T): T {
+  private monitor<T extends { export: (...args: any[]) => void }>(signal: string, exporter: T): T {
     const original = exporter.export.bind(exporter);
     exporter.export = ((data: unknown, callback: (result: any) => void) => {
       original(data, (result: any) => {
-        if (result.code !== ExportResultCode.SUCCESS) this.failures++;
+        if (result.code === ExportResultCode.SUCCESS) this.exportSucceeded();
+        else this.exportFailed(signal, result.error);
         callback(result);
       });
     }) as T["export"];
     return exporter;
+  }
+  private exportFailed(signal: string, error: unknown) {
+    this.failures++;
+    // Warn once per failing streak, not on every dropped batch.
+    if (++this.exportFailures !== EXPORT_WARN_AFTER) return;
+    const reason = exportReason(error);
+    this.report({ state: "failing", failures: this.exportFailures, signal, reason });
+  }
+  private exportSucceeded() {
+    const failures = this.exportFailures;
+    this.exportFailures = 0;
+    if (failures >= EXPORT_WARN_AFTER) this.report({ state: "recovered", failures });
+  }
+  private report(health: ExportHealth) {
+    try {
+      this.onExportHealth?.(health);
+    } catch {
+      // A broken listener must not break the export pipeline.
+    }
   }
   span(name: string, session: string, parent?: SpanLifetime, attrs = {}) {
     const context = parent

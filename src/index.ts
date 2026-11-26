@@ -3,6 +3,7 @@ import {
   modelError,
   modelOutcome,
   completionOutcome,
+  exportHealthMessage,
   requestAttributes,
   responseAttributes,
   toolAttributes,
@@ -60,6 +61,10 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
           }
           runtime = created;
           telemetry = created.telemetry;
+          telemetry.onExportHealth = (health) => {
+            const { message, level } = exportHealthMessage(health);
+            ctx.ui.notify(message, level);
+          };
         });
         starting.add(pending);
         try {
@@ -165,7 +170,7 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
     description: "Show privacy and exporter status without endpoints or credentials",
     handler: async (_args, ctx) =>
       ctx.ui.notify(
-        `${diagnostic}; pending tools=${tools.size}; shutdown failures=${telemetry?.failures ?? 0}`,
+        `${diagnostic}; pending tools=${tools.size}; failed exports in a row=${telemetry?.exportFailures ?? 0}; shutdown failures=${telemetry?.failures ?? 0}`,
         "info",
       ),
   });
