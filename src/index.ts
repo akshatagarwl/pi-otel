@@ -17,6 +17,7 @@ import type { SpanLifetime as Span } from "./lifetime.ts";
 import { config } from "./config.ts";
 import { Telemetry } from "./telemetry.ts";
 import { startTelemetry } from "./runtime.ts";
+import { claim, envCarrier, handoffTexts, offer } from "./handoff.ts";
 
 export default function extension(pi: ExtensionAPI, start = startTelemetry) {
   let telemetry: Telemetry | undefined;
@@ -83,6 +84,16 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
   });
   pi.on("before_agent_start", (event, ctx) => {
     if (ctx.sessionManager.getSessionId() !== session) return;
+    if (!interaction && telemetry) {
+      // A subagent's prompt carries the task its parent's spawn/tell sent; join that trace.
+      const handoff = event.messageType === "user" ? claim(event.prompt, session) : undefined;
+      interaction = telemetry.span(
+        "pi.interaction",
+        session,
+        handoff?.carrier ?? envCarrier(),
+        handoff ? { "pi.parent.conversation.id": handoff.session } : {},
+      );
+    }
     const span = ensureInteraction();
     if (span && event.messageType === "user")
       telemetry?.content(span, session, "prompt", event.prompt);
@@ -128,6 +139,9 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
     );
     tools.set(event.toolCallId, span);
     telemetry.content(span, session, "tool.preflight.input", event.args);
+    const texts = handoffTexts(event.toolName, event.args);
+    const carrier = texts.length ? telemetry.carrier(span) : undefined;
+    if (carrier) offer(texts, { carrier, session });
   });
   pi.on("tool_execution_end", (event, ctx) => {
     if (ctx.sessionManager.getSessionId() !== session) return;

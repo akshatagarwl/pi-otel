@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import { ROOT_CONTEXT, trace } from "@opentelemetry/api";
 import { OTelTelemetryAdapter } from "./adapter.ts";
 import { SpanLifetime } from "./lifetime.ts";
+import type { TelemetryCarrier } from "@earendil-works/pi-telemetry";
 import { ExportResultCode } from "@opentelemetry/core";
 import { TracerProvider, BatchSpanProcessor } from "@opentelemetry/sdk-trace";
 import { LoggerProvider, BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
@@ -118,10 +119,14 @@ export class Telemetry {
       // A broken listener must not break the export pipeline.
     }
   }
-  span(name: string, session: string, parent?: SpanLifetime, attrs = {}) {
-    const context = parent
-      ? this.adapter.propagation.extract(this.adapter.propagation.inject(parent.span))
-      : this.adapter;
+  /** A span under `parent`: a span of this session, or W3C trace context from another session or process. */
+  span(name: string, session: string, parent?: SpanLifetime | TelemetryCarrier, attrs = {}) {
+    const context =
+      parent instanceof SpanLifetime
+        ? this.adapter.propagation.extract(this.adapter.propagation.inject(parent.span))
+        : parent
+          ? this.adapter.propagation.extract(parent)
+          : this.adapter;
     const held = new SpanLifetime(context, name, { "gen_ai.conversation.id": session, ...attrs });
     this.held.add(held);
     void held.done.then(
@@ -133,6 +138,10 @@ export class Telemetry {
     );
     if (this.closing) held.finish("interrupted");
     return held;
+  }
+  /** W3C trace context for handing this span to another session or process. */
+  carrier(span: SpanLifetime): TelemetryCarrier | undefined {
+    return this.adapter.propagation.inject(span.span);
   }
   content(span: SpanLifetime, session: string, kind: string, value: unknown) {
     const content = serializeContent(this.cfg.content, value);
