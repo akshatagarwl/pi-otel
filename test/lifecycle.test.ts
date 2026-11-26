@@ -141,6 +141,9 @@ test("Pi loader lifecycle: retries, parallel/nested/failing tools, cancellation 
     const failedTool = spans.find((s: any) => s.name === "pi.tool" && attr(s, "process.exit.code"));
     assert.equal(Number(attr(failedTool, "process.exit.code").intValue), 2);
     assert.equal(Number(attr(failedModel, "gen_ai.usage.input_tokens").intValue), 1000);
+    assert.equal(attr(failedModel, "pi.cost.usd").doubleValue, 0.2);
+    assert.equal(attr(failedModel, "pi.cost.source").stringValue, "estimated");
+    assert.equal(attr(failedModel, "pi.cache.miss").boolValue, false);
     assert.equal(failedModel.status.message, "token expired");
     assert.equal(attr(failedModel, "exception.message").stringValue, "token expired");
     const logs = payloads["/v1/logs"].flatMap((b) =>

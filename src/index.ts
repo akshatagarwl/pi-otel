@@ -1,5 +1,6 @@
 import {
   assistantContent,
+  modelCallAttributes,
   modelError,
   modelOutcome,
   completionOutcome,
@@ -31,6 +32,14 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
   let failed = false;
   let diagnostic = "disabled: configure an endpoint";
   const tools = new Map<string, Span>();
+  // Pi only binds its actions once the session runs; before that the call throws.
+  const thinkingLevel = () => {
+    try {
+      return pi.getThinkingLevel();
+    } catch {
+      return undefined;
+    }
+  };
   const ensureInteraction = () => {
     interaction ??= telemetry?.span("pi.interaction", session);
     return interaction;
@@ -111,6 +120,7 @@ export default function extension(pi: ExtensionAPI, start = startTelemetry) {
     model.setAttributes({
       ...responseAttributes(message.provider, message.model, message.stopReason),
       ...usageAttributes(message.usage),
+      ...modelCallAttributes(message.usage, thinkingLevel()),
     });
     telemetry?.content(model, session, "assistant", assistantContent(message.content));
     telemetry?.usage(message.usage, {

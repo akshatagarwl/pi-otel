@@ -118,6 +118,27 @@ export function usageAttributes(usage: Usage | null | undefined) {
   return attrs;
 }
 
+/**
+ * Per-call cost and cache behaviour, so a span says which call was expensive.
+ * A cache miss read nothing from the prompt cache but wrote to it: the whole
+ * prompt was paid for again.
+ */
+export function modelCallAttributes(usage: Usage | null | undefined, thinkingLevel?: string) {
+  const { tokens, cost } = usageMeasurements(usage);
+  const bucket = (name: "cacheRead" | "cacheWrite") =>
+    tokens.find((token) => token.bucket === name)?.value;
+  const read = bucket("cacheRead");
+  const write = bucket("cacheWrite");
+  const attrs: Record<string, string | number | boolean> = {};
+  if (cost) {
+    attrs["pi.cost.usd"] = cost.value;
+    attrs["pi.cost.source"] = cost.source;
+  }
+  if (read !== undefined && write !== undefined) attrs["pi.cache.miss"] = read === 0 && write > 0;
+  if (thinkingLevel) attrs["pi.thinking.level"] = thinkingLevel;
+  return attrs;
+}
+
 export type ExportHealth =
   | { state: "failing"; failures: number; signal: string; reason: string }
   | { state: "recovered"; failures: number };

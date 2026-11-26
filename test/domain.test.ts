@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   completionOutcome,
   assistantContent,
+  modelCallAttributes,
   modelError,
   modelOutcome,
   requestAttributes,
@@ -74,6 +75,33 @@ describe("pure event decisions (no providers or I/O)", () => {
       "gen_ai.usage.output_tokens": 5,
     });
     expect(usageAttributes(undefined)).toEqual({});
+  });
+  test("model spans carry the call's cost, thinking level and cache miss", () => {
+    expect(
+      modelCallAttributes(
+        { input: 3, output: 80, cacheRead: 0, cacheWrite: 240_000, cost: { total: 1.2 } },
+        "medium",
+      ),
+    ).toEqual({
+      "pi.cost.usd": 1.2,
+      "pi.cost.source": "estimated",
+      "pi.cache.miss": true,
+      "pi.thinking.level": "medium",
+    });
+    expect(
+      modelCallAttributes({
+        cacheRead: 240_000,
+        cacheWrite: 500,
+        cost: { total: 0.1, totalFromProvider: true },
+      }),
+    ).toEqual({ "pi.cost.usd": 0.1, "pi.cost.source": "provider", "pi.cache.miss": false });
+    // A call that neither reads nor writes the cache did not miss it.
+    expect(modelCallAttributes({ cacheRead: 0, cacheWrite: 0 })).toEqual({
+      "pi.cache.miss": false,
+    });
+    // Unknown buckets or cost stay unset rather than guessed.
+    expect(modelCallAttributes({ cacheWrite: 10, cost: { total: Number.NaN } })).toEqual({});
+    expect(modelCallAttributes(undefined)).toEqual({});
   });
   test("disjoint finite usage includes zero and ignores totals/reasoning/components", () => {
     const usage = Object.freeze({
